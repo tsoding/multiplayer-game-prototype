@@ -1,6 +1,7 @@
 import { WebSocketServer } from 'ws';
 import * as common from './common.mjs';
 const SERVER_FPS = 30;
+const SERVER_LIMIT = 69;
 const players = new Map();
 let idCounter = 0;
 const wss = new WebSocketServer({
@@ -11,6 +12,10 @@ function randomStyle() {
     return `hsl(${Math.floor(Math.random() * 360)} 80% 50%)`;
 }
 wss.on("connection", (ws) => {
+    if (players.size >= SERVER_LIMIT) {
+        ws.close();
+        return;
+    }
     const id = idCounter++;
     const x = Math.random() * common.WORLD_WIDTH;
     const y = Math.random() * common.WORLD_HEIGHT;
