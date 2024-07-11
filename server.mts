@@ -17,10 +17,15 @@ const wss = new WebSocketServer({
 
 let eventQueue: Array<Event> = [];
 
+function randomStyle(): string {
+    return `hsl(${Math.floor(Math.random()*360)} 80% 50%)`
+}
+
 wss.on("connection", (ws) => {
     const id = idCounter++;
     const x = Math.random()*common.WORLD_WIDTH;
     const y = Math.random()*common.WORLD_HEIGHT;
+    const style = randomStyle();
     const player = {
         ws,
         id,
@@ -32,12 +37,13 @@ wss.on("connection", (ws) => {
             'up': false,
             'down': false,
         },
+        style
     }
     players.set(id, player);
     console.log(`Player ${id} connected`);
     eventQueue.push({
         kind: 'PlayerJoined',
-        id, x, y
+        id, x, y, style
     })
     ws.addEventListener("message", (event) => {
         const message = JSON.parse(event.data.toString());
@@ -78,11 +84,13 @@ function tick() {
                 }));
                 const eventString = JSON.stringify(event);
                 players.forEach((otherPlayer) => {
+                    // TODO: make this place more type safe
                     joinedPlayer.ws.send(JSON.stringify({
                         kind: 'PlayerJoined',
                         id: otherPlayer.id,
                         x: otherPlayer.x,
                         y: otherPlayer.y,
+                        style: otherPlayer.style,
                     }))
                     if (otherPlayer.id !== joinedPlayer.id) {
                         otherPlayer.ws.send(eventString);

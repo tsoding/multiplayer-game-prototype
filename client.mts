@@ -49,6 +49,7 @@ const DIRECTION_KEYS: {[key: string]: Direction} = {
                         'up': false,
                         'down': false,
                     },
+                    style: message.style,
                 })
             } else if (common.isPlayerLeft(message)) {
                 players.delete(message.id)
@@ -79,9 +80,9 @@ const DIRECTION_KEYS: {[key: string]: Direction} = {
 
         ctx.fillStyle = 'white';
         ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-        ctx.fillStyle = 'red';
         players.forEach((player) => {
             common.updatePlayer(player, deltaTime);
+            ctx.fillStyle = player.style;
             ctx.fillRect(player.x, player.y, common.PLAYER_SIZE, common.PLAYER_SIZE);
         })
 
@@ -116,5 +117,4 @@ const DIRECTION_KEYS: {[key: string]: Direction} = {
             }
         }
     });
-
 })()
