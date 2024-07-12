@@ -89,14 +89,14 @@ function tick() {
                 }));
                 const eventString = JSON.stringify(event);
                 players.forEach((otherPlayer) => {
-                    // TODO: make this place more type safe
-                    joinedPlayer.ws.send(JSON.stringify({
+                    let otherPlayerJoined: PlayerJoined = {
                         kind: 'PlayerJoined',
                         id: otherPlayer.id,
                         x: otherPlayer.x,
                         y: otherPlayer.y,
                         style: otherPlayer.style,
-                    }))
+                    };
+                    joinedPlayer.ws.send(JSON.stringify(otherPlayerJoined))
                     if (otherPlayer.id !== joinedPlayer.id) {
                         otherPlayer.ws.send(eventString);
                     }
