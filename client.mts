@@ -20,6 +20,7 @@ const DIRECTION_KEYS: {[key: string]: Direction} = {
     const ctx = gameCanvas.getContext("2d");
     if (ctx === null) throw new Error('2d canvas is not supported');
 
+    // TODO: unhardcode the websocket server address
     const ws = new WebSocket("ws://localhost:6970");
     let myId: undefined | number = undefined;
     const players = new Map<number, Player>();
@@ -27,6 +28,7 @@ const DIRECTION_KEYS: {[key: string]: Direction} = {
         console.log("WEBSOCKET CLOSE", event)
     });
     ws.addEventListener("error", (event) => {
+        // TODO: reconnect on errors
         console.log("WEBSOCKET ERROR", event)
     });
     ws.addEventListener("message", (event) => {
@@ -84,6 +86,7 @@ const DIRECTION_KEYS: {[key: string]: Direction} = {
 
         ctx.fillStyle = '#202020';
         ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        // TODO: indicate different states of the client. Like 'connecting', 'error', etc.
         players.forEach((player) => {
             common.updatePlayer(player, deltaTime);
             ctx.fillStyle = player.style;
