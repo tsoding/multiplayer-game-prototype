@@ -125,4 +125,4 @@ function tick() {
 }
 setTimeout(tick, 1000/SERVER_FPS);
 
-console.log(`Listening to ws://localhost:${common.SERVER_PORT}`)
+console.log(`Listening to ws://0.0.0.0:${common.SERVER_PORT}`)
