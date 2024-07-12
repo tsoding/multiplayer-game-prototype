@@ -86,11 +86,17 @@ const DIRECTION_KEYS: {[key: string]: Direction} = {
         ctx.fillStyle = '#202020';
         ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
         // TODO: indicate different states of the client. Like 'connecting', 'error', etc.
-        // TODO: indicate where you are
         players.forEach((player) => {
             common.updatePlayer(player, deltaTime);
             ctx.fillStyle = player.style;
             ctx.fillRect(player.x, player.y, common.PLAYER_SIZE, common.PLAYER_SIZE);
+            if (player.id === myId) {
+                ctx.strokeStyle = "white";
+                ctx.lineWidth = 4;
+                ctx.beginPath()
+                ctx.strokeRect(player.x, player.y, common.PLAYER_SIZE, common.PLAYER_SIZE);
+                ctx.stroke();
+            }
         })
 
         window.requestAnimationFrame(frame);
