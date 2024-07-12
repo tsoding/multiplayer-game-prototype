@@ -94,26 +94,30 @@ const DIRECTION_KEYS: {[key: string]: Direction} = {
     });
 
     window.addEventListener("keydown", (e) => {
-        if (!e.repeat) {
-            const direction = DIRECTION_KEYS[e.code];
-            if (direction !== undefined) {
-                ws.send(JSON.stringify({
-                    kind: 'AmmaMoving',
-                    start: true,
-                    direction
-                }))
+        if (myId !== undefined) {
+            if (!e.repeat) {
+                const direction = DIRECTION_KEYS[e.code];
+                if (direction !== undefined) {
+                    ws.send(JSON.stringify({
+                        kind: 'AmmaMoving',
+                        start: true,
+                        direction
+                    }))
+                }
             }
         }
     });
     window.addEventListener("keyup", (e) => {
-        if (!e.repeat) {
-            const direction = DIRECTION_KEYS[e.code];
-            if (direction !== undefined) {
-                ws.send(JSON.stringify({
-                    kind: 'AmmaMoving',
-                    start: false,
-                    direction
-                }))
+        if (myId !== undefined) {
+            if (!e.repeat) {
+                const direction = DIRECTION_KEYS[e.code];
+                if (direction !== undefined) {
+                    ws.send(JSON.stringify({
+                        kind: 'AmmaMoving',
+                        start: false,
+                        direction
+                    }))
+                }
             }
         }
     });
