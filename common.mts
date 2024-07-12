@@ -1,6 +1,7 @@
 export const SERVER_PORT = 6970;
-export const WORLD_WIDTH = 800;
-export const WORLD_HEIGHT = 600;
+export const WORLD_FACTOR = 200;
+export const WORLD_WIDTH = 4*WORLD_FACTOR;
+export const WORLD_HEIGHT = 3*WORLD_FACTOR;
 export const PLAYER_SIZE = 30;
 export const PLAYER_SPEED = 500;
 
