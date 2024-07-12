@@ -28,8 +28,8 @@ wss.on("connection", (ws) => {
         return;
     }
     const id = idCounter++;
-    const x = Math.random()*common.WORLD_WIDTH;
-    const y = Math.random()*common.WORLD_HEIGHT;
+    const x = Math.random()*(common.WORLD_WIDTH - common.PLAYER_SIZE);
+    const y = Math.random()*(common.WORLD_HEIGHT - common.PLAYER_SIZE);
     const style = randomStyle();
     const player = {
         ws,
