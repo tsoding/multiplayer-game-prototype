@@ -2,10 +2,14 @@ import * as common from './common.mjs'
 import type {Player, Direction} from './common.mjs';
 
 const DIRECTION_KEYS: {[key: string]: Direction} = {
-    'ArrowLeft': 'left',
-    'ArrowRight': 'right',
-    'ArrowUp': 'up',
-    'ArrowDown': 'down',
+    'ArrowLeft'  : 'left',
+    'ArrowRight' : 'right',
+    'ArrowUp'    : 'up',
+    'ArrowDown'  : 'down',
+    'KeyA'       : 'left',
+    'KeyD'       : 'right',
+    'KeyS'       : 'down',
+    'KeyW'       : 'up',
 };
 
 (async () => {
