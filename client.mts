@@ -87,6 +87,7 @@ const DIRECTION_KEYS: {[key: string]: Direction} = {
         ctx.fillStyle = '#202020';
         ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
         // TODO: indicate different states of the client. Like 'connecting', 'error', etc.
+        // TODO: indicate where you are
         players.forEach((player) => {
             common.updatePlayer(player, deltaTime);
             ctx.fillStyle = player.style;
