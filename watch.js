@@ -25,4 +25,6 @@ function cmd(program, args) {
 }
 
 cmd('tsc', ['-w'])
+// TODO: restart the websocket server when server.mjs is modified
+cmd('node', ['server.mjs'])
 cmd('http-server', ['-p', '6969', '-a', '127.0.0.1', '-s', '-c-1', '-d', 'false'])
