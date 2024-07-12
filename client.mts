@@ -78,7 +78,7 @@ const DIRECTION_KEYS: {[key: string]: Direction} = {
         const deltaTime = (timestamp - previousTimestamp)/1000;
         previousTimestamp = timestamp;
 
-        ctx.fillStyle = 'white';
+        ctx.fillStyle = '#181818';
         ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
         players.forEach((player) => {
             common.updatePlayer(player, deltaTime);
