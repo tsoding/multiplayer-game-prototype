@@ -38,7 +38,7 @@ export function isNumber(arg: any): arg is number {
 }
 
 export function isString(arg: any): arg is string {
-    return typeof(arg) === 'string';
+    return typeof(arg) === 'string' || arg instanceof String;
 }
 
 export function isBoolean(arg: any): arg is boolean {
