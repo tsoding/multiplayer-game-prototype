@@ -36,7 +36,6 @@ const DIRECTION_KEYS: {[key: string]: Direction} = {
             if (common.isHello(message)) {
                 myId = message.id;
                 console.log(`Connected as player ${myId}`);
-                ws.send('bogus-amogus');
             } else {
                 console.log("Received bogus-amogus message from server", message)
                 ws.close();
