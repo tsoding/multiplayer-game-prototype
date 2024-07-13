@@ -132,6 +132,11 @@ export function updatePlayer(player: Player, deltaTime: number) {
             dy += DIRECTION_VECTORS[dir].y;
         }
     }
+    const l = dx*dx + dy*dy;
+    if (l !== 0) {
+        dx /= l;
+        dy /= l;
+    }
     player.x = properMod(player.x + dx*PLAYER_SPEED*deltaTime, WORLD_WIDTH);
     player.y = properMod(player.y + dy*PLAYER_SPEED*deltaTime, WORLD_HEIGHT);
 }
@@ -143,5 +148,3 @@ interface Message {
 export function sendMessage<T extends Message>(socket: ws.WebSocket | WebSocket, message: T) {
     socket.send(JSON.stringify(message))
 }
-
-
