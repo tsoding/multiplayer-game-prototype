@@ -11,12 +11,10 @@ interface PlayerWithSocket extends Player {
 
 const players = new Map<number, PlayerWithSocket>();
 let idCounter = 0;
-
+let eventQueue: Array<Event> = [];
 const wss = new WebSocketServer({
     port: common.SERVER_PORT,
 })
-
-let eventQueue: Array<Event> = [];
 
 function randomStyle(): string {
     return `hsl(${Math.floor(Math.random()*360)} 80% 50%)`
@@ -51,7 +49,14 @@ wss.on("connection", (ws) => {
         id, x, y, style
     })
     ws.addEventListener("message", (event) => {
-        const message = JSON.parse(event.data.toString());
+        let message;
+        try {
+            message = JSON.parse(event.data.toString());
+        } catch(e) {
+            console.log(`Recieved bogus-amogus message from client ${id} on parsing JSON:`, event.data);
+            ws.close();
+            return;
+        }
         if (common.isAmmaMoving(message)) {
             console.log(`Received message from player ${id}`, message)
             eventQueue.push({
@@ -63,8 +68,9 @@ wss.on("connection", (ws) => {
                 direction: message.direction,
             });
         } else {
-            console.log(`Received bogus-amogus message from client ${id}`, message)
+            console.log(`Received bogus-amogus message from client ${id}:`, message)
             ws.close();
+            return;
         }
     });
     ws.on("close", () => {
