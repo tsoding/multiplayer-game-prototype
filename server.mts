@@ -1,6 +1,6 @@
 import {WebSocketServer, WebSocket} from 'ws';
 import * as common from './common.mjs'
-import {PlayerJoined, Player, Event} from './common.mjs'
+import {PlayerJoined, Player, Event, Hello} from './common.mjs'
 
 const SERVER_FPS = 30;
 const SERVER_LIMIT = 69;
@@ -83,20 +83,19 @@ function tick() {
             case 'PlayerJoined': {
                 const joinedPlayer = players.get(event.id);
                 if (joinedPlayer === undefined) continue;
-                joinedPlayer.ws.send(JSON.stringify({
+                common.sendMessage<Hello>(joinedPlayer.ws, {
                     kind: "Hello",
                     id: joinedPlayer.id,
-                }));
+                });
                 const eventString = JSON.stringify(event);
                 players.forEach((otherPlayer) => {
-                    let otherPlayerJoined: PlayerJoined = {
+                    common.sendMessage<PlayerJoined>(joinedPlayer.ws, {
                         kind: 'PlayerJoined',
                         id: otherPlayer.id,
                         x: otherPlayer.x,
                         y: otherPlayer.y,
                         style: otherPlayer.style,
-                    };
-                    joinedPlayer.ws.send(JSON.stringify(otherPlayerJoined))
+                    });
                     if (otherPlayer.id !== joinedPlayer.id) {
                         otherPlayer.ws.send(eventString);
                     }

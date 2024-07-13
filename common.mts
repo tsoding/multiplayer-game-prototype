@@ -1,3 +1,5 @@
+import type * as ws from 'ws';
+
 export const SERVER_PORT = 6970;
 export const WORLD_FACTOR = 200;
 export const WORLD_WIDTH = 4*WORLD_FACTOR;
@@ -133,3 +135,13 @@ export function updatePlayer(player: Player, deltaTime: number) {
     player.x = properMod(player.x + dx*PLAYER_SPEED*deltaTime, WORLD_WIDTH);
     player.y = properMod(player.y + dy*PLAYER_SPEED*deltaTime, WORLD_HEIGHT);
 }
+
+interface Message {
+    kind: string,
+}
+
+export function sendMessage<T extends Message>(socket: ws.WebSocket | WebSocket, message: T) {
+    socket.send(JSON.stringify(message))
+}
+
+
