@@ -1,3 +1,6 @@
 node_modules/
 *.mjs
 *.map
+# lock files
+*-lock*
+*.lock*
