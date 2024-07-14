@@ -176,7 +176,7 @@ function tick() {
         switch (event.kind) {
             case 'PlayerMoving': {
                 const player = players.get(event.id);
-                if (player !== undefined) { // This MAY happen if somebody joined, moved and left withing a single tick. Just skipping.
+                if (player !== undefined) { // This MAY happen if somebody joined, moved and left within a single tick. Just skipping.
                     player.moving[event.direction] = event.start;
                     const eventString = JSON.stringify(event);
                     players.forEach((player) => player.ws.send(eventString));
