@@ -1,6 +1,6 @@
 import {WebSocketServer, WebSocket} from 'ws';
 import * as common from './common.mjs'
-import {PlayerJoined, Player, Event, Hello} from './common.mjs'
+import {PlayerJoined, PlayerLeft, Player, Event, Hello} from './common.mjs'
 
 const SERVER_FPS = 30;
 const SERVER_LIMIT = 69;
@@ -84,46 +84,93 @@ wss.on("connection", (ws) => {
 })
 
 function tick() {
-    for (let event of eventQueue) {
+    const joinedIds = new Set<number>()
+    const leftIds = new Set<number>()
+
+    // This makes sure that if somebody joined and left within a single tick they are never handled
+    for (const event of eventQueue) {
         switch (event.kind) {
             case 'PlayerJoined': {
-                const joinedPlayer = players.get(event.id);
-                if (joinedPlayer === undefined) continue;
-                common.sendMessage<Hello>(joinedPlayer.ws, {
-                    kind: "Hello",
-                    id: joinedPlayer.id,
-                });
-                const eventString = JSON.stringify(event);
-                players.forEach((otherPlayer) => {
+                joinedIds.add(event.id);
+            } break;
+            case 'PlayerLeft': {
+                if (!joinedIds.delete(event.id)) {
+                    leftIds.add(event.id);
+                }
+            } break;
+        }
+    }
+
+    // Greeting all the joined players and notifying them about other players
+    joinedIds.forEach((joinedId) => {
+        const joinedPlayer = players.get(joinedId);
+        if (joinedPlayer !== undefined) { // This should never happen, but we handling none existing ids for more robustness
+            common.sendMessage<Hello>(joinedPlayer.ws, {
+                kind: 'Hello',
+                id: joinedPlayer.id,
+                x: joinedPlayer.x,
+                y: joinedPlayer.y,
+                style: joinedPlayer.style,
+            })
+            players.forEach((otherPlayer) => {
+                if (joinedId !== otherPlayer.id) { // Joined player should already know about themselves
                     common.sendMessage<PlayerJoined>(joinedPlayer.ws, {
                         kind: 'PlayerJoined',
                         id: otherPlayer.id,
                         x: otherPlayer.x,
                         y: otherPlayer.y,
                         style: otherPlayer.style,
-                    });
-                    if (otherPlayer.id !== joinedPlayer.id) {
-                        otherPlayer.ws.send(eventString);
-                    }
-                })
-            } break;
+                    })
+                }
+            })
+        }
+    })
 
-            case 'PlayerLeft': {
-                const eventString = JSON.stringify(event);
-                players.forEach((player) => player.ws.send(eventString));
-            } break;
+    // Notifying about who joined
+    joinedIds.forEach((joinedId) => {
+        const joinedPlayer = players.get(joinedId);
+        if (joinedPlayer !== undefined) { // This should never happen, but we handling none existing ids for more robustness
+            players.forEach((otherPlayer) => {
+                if (joinedId !== otherPlayer.id) { // Joined player should already know about themselves
+                    common.sendMessage<PlayerJoined>(otherPlayer.ws, {
+                        kind: 'PlayerJoined',
+                        id: joinedPlayer.id,
+                        x: joinedPlayer.x,
+                        y: joinedPlayer.y,
+                        style: joinedPlayer.style,
+                    })
+                }
+            })
+        }
+    })
 
+    // Notifying about who left
+    leftIds.forEach((leftId) => {
+        players.forEach((player) => {
+            common.sendMessage<PlayerLeft>(player.ws, {
+                kind: 'PlayerLeft',
+                id: leftId,
+            });
+        })
+    })
+
+    // Notifying about the movements
+    for (let event of eventQueue) {
+        switch (event.kind) {
             case 'PlayerMoving': {
                 const player = players.get(event.id);
-                if (player === undefined) continue;
-                player.moving[event.direction] = event.start;
-                const eventString = JSON.stringify(event);
-                players.forEach((player) => player.ws.send(eventString));
+                if (player !== undefined) { // This MAY happen if somebody joined, moved and left withing a single tick. Just skipping.
+                    player.moving[event.direction] = event.start;
+                    const eventString = JSON.stringify(event);
+                    players.forEach((player) => player.ws.send(eventString));
+                }
             } break;
         }
     }
+
     eventQueue.length = 0;
 
+    // Simulating the world for one server tick.
     players.forEach((player) => common.updatePlayer(player, 1/SERVER_FPS))
 
     setTimeout(tick, 1000/SERVER_FPS);

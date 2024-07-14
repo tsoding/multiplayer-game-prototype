@@ -48,6 +48,9 @@ export function isBoolean(arg: any): arg is boolean {
 export interface Hello {
     kind: "Hello",
     id: number,
+    x: number,
+    y: number,
+    style: string,
 }
 
 export function isHello(arg: any): arg is Hello {

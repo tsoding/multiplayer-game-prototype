@@ -35,6 +35,18 @@ const DIRECTION_KEYS: {[key: string]: Direction} = {
             const message = JSON.parse(event.data)
             if (common.isHello(message)) {
                 myId = message.id;
+                players.set(message.id, {
+                    id: message.id,
+                    x: message.x,
+                    y: message.y,
+                    moving: {
+                        'left': false,
+                        'right': false,
+                        'up': false,
+                        'down': false,
+                    },
+                    style: message.style,
+                })
                 console.log(`Connected as player ${myId}`);
             } else {
                 console.log("Received bogus-amogus message from server", message)
