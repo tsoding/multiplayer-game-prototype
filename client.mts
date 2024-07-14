@@ -99,20 +99,24 @@ const DIRECTION_KEYS: {[key: string]: Direction} = {
         ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
         // TODO: indicate different states of the client. Like 'connecting', 'error', etc.
         players.forEach((player) => {
-            if (me !== undefined) {
+            if (me !== undefined && me.id !== player.id) {
                 common.updatePlayer(player, deltaTime);
                 ctx.fillStyle = player.style;
                 ctx.fillRect(player.x, player.y, common.PLAYER_SIZE, common.PLAYER_SIZE);
-                if (player.id === me.id) {
-                    ctx.strokeStyle = "white";
-                    ctx.lineWidth = 4;
-                    ctx.beginPath()
-                    ctx.strokeRect(player.x, player.y, common.PLAYER_SIZE, common.PLAYER_SIZE);
-                    ctx.stroke();
-                }
             }
         })
 
+        if (me !== undefined) {
+            common.updatePlayer(me, deltaTime);
+            ctx.fillStyle = me.style;
+            ctx.fillRect(me.x, me.y, common.PLAYER_SIZE, common.PLAYER_SIZE);
+
+            ctx.strokeStyle = "white";
+            ctx.lineWidth = 4;
+            ctx.beginPath()
+            ctx.strokeRect(me.x, me.y, common.PLAYER_SIZE, common.PLAYER_SIZE);
+            ctx.stroke();
+        }
         window.requestAnimationFrame(frame);
     }
     window.requestAnimationFrame((timestamp) => {
