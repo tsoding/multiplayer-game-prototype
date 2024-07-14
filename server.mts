@@ -110,7 +110,7 @@ wss.on("connection", (ws) => {
         style
     }
     players.set(id, player);
-    console.log(`Player ${id} connected`);
+    // console.log(`Player ${id} connected`);
     eventQueue.push({
         kind: 'PlayerJoined',
         id, x, y, style
@@ -125,7 +125,7 @@ wss.on("connection", (ws) => {
             message = JSON.parse(event.data.toString());
         } catch(e) {
             stats.bogusAmogusMessages += 1;
-            console.log(`Recieved bogus-amogus message from client ${id} on parsing JSON:`, event.data);
+            // console.log(`Recieved bogus-amogus message from client ${id} on parsing JSON:`, event.data);
             ws.close();
             return;
         }
@@ -141,13 +141,13 @@ wss.on("connection", (ws) => {
             });
         } else {
             stats.bogusAmogusMessages += 1;
-            console.log(`Received bogus-amogus message from client ${id}:`, message)
+            // console.log(`Received bogus-amogus message from client ${id}:`, message)
             ws.close();
             return;
         }
     });
     ws.on("close", () => {
-        console.log(`Player ${id} disconnected`);
+        // console.log(`Player ${id} disconnected`);
         players.delete(id);
         stats.playersLeft += 1;
         eventQueue.push({
