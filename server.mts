@@ -15,6 +15,8 @@ let eventQueue: Array<Event> = [];
 const wss = new WebSocketServer({
     port: common.SERVER_PORT,
 })
+const joinedIds = new Set<number>()
+const leftIds = new Set<number>()
 
 function randomStyle(): string {
     return `hsl(${Math.floor(Math.random()*360)} 80% 50%)`
@@ -84,8 +86,8 @@ wss.on("connection", (ws) => {
 })
 
 function tick() {
-    const joinedIds = new Set<number>()
-    const leftIds = new Set<number>()
+    joinedIds.clear();
+    leftIds.clear();
 
     // This makes sure that if somebody joined and left within a single tick they are never handled
     for (const event of eventQueue) {
