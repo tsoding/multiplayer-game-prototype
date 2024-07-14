@@ -272,6 +272,7 @@ function tick() {
 
 
     // Simulating the world for one server tick.
+    // TODO: simulate at actual deltaTime, so to not break the predictions of players.
     players.forEach((player) => common.updatePlayer(player, 1/SERVER_FPS))
 
     stats.ticksCount += 1;
@@ -287,6 +288,7 @@ function tick() {
     bytesReceivedWithinTick = 0;
 
     if (stats.ticksCount%SERVER_FPS === 0) {
+        // TODO: serve the stats over a separate websocket, so a separate html page can poll it once in a while
         printStats()
     }
 
