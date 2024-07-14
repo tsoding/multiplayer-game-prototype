@@ -21,7 +21,7 @@ const DIRECTION_KEYS: {[key: string]: Direction} = {
     if (ctx === null) throw new Error('2d canvas is not supported');
 
     const ws = new WebSocket(`ws://${window.location.hostname}:${common.SERVER_PORT}`);
-    let myId: undefined | number = undefined;
+    let me: Player | undefined = undefined;
     const players = new Map<number, Player>();
     ws.addEventListener("close", (event) => {
         console.log("WEBSOCKET CLOSE", event)
@@ -31,11 +31,10 @@ const DIRECTION_KEYS: {[key: string]: Direction} = {
         console.log("WEBSOCKET ERROR", event)
     });
     ws.addEventListener("message", (event) => {
-        if (myId === undefined) {
+        if (me === undefined) {
             const message = JSON.parse(event.data)
             if (common.isHello(message)) {
-                myId = message.id;
-                players.set(message.id, {
+                me = {
                     id: message.id,
                     x: message.x,
                     y: message.y,
@@ -46,8 +45,9 @@ const DIRECTION_KEYS: {[key: string]: Direction} = {
                         'down': false,
                     },
                     style: message.style,
-                })
-                console.log(`Connected as player ${myId}`);
+                };
+                players.set(message.id, me)
+                console.log(`Connected as player ${me.id}`);
             } else {
                 console.log("Received bogus-amogus message from server", message)
                 ws.close();
@@ -99,15 +99,17 @@ const DIRECTION_KEYS: {[key: string]: Direction} = {
         ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
         // TODO: indicate different states of the client. Like 'connecting', 'error', etc.
         players.forEach((player) => {
-            common.updatePlayer(player, deltaTime);
-            ctx.fillStyle = player.style;
-            ctx.fillRect(player.x, player.y, common.PLAYER_SIZE, common.PLAYER_SIZE);
-            if (player.id === myId) {
-                ctx.strokeStyle = "white";
-                ctx.lineWidth = 4;
-                ctx.beginPath()
-                ctx.strokeRect(player.x, player.y, common.PLAYER_SIZE, common.PLAYER_SIZE);
-                ctx.stroke();
+            if (me !== undefined) {
+                common.updatePlayer(player, deltaTime);
+                ctx.fillStyle = player.style;
+                ctx.fillRect(player.x, player.y, common.PLAYER_SIZE, common.PLAYER_SIZE);
+                if (player.id === me.id) {
+                    ctx.strokeStyle = "white";
+                    ctx.lineWidth = 4;
+                    ctx.beginPath()
+                    ctx.strokeRect(player.x, player.y, common.PLAYER_SIZE, common.PLAYER_SIZE);
+                    ctx.stroke();
+                }
             }
         })
 
@@ -119,7 +121,7 @@ const DIRECTION_KEYS: {[key: string]: Direction} = {
     });
 
     window.addEventListener("keydown", (e) => {
-        if (myId !== undefined) {
+        if (me !== undefined) {
             if (!e.repeat) {
                 const direction = DIRECTION_KEYS[e.code];
                 if (direction !== undefined) {
@@ -133,7 +135,7 @@ const DIRECTION_KEYS: {[key: string]: Direction} = {
         }
     });
     window.addEventListener("keyup", (e) => {
-        if (myId !== undefined) {
+        if (me !== undefined) {
             if (!e.repeat) {
                 const direction = DIRECTION_KEYS[e.code];
                 if (direction !== undefined) {
