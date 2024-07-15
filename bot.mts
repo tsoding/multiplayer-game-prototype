@@ -39,6 +39,7 @@ function createBot(): Bot {
                     style: message.style,
                 };
                 turn();
+                setTimeout(tick, 1000/BOT_FPS);
                 console.log(`Connected as player ${bot.me.id}`);
             } else {
                 console.log("Received bogus-amogus message from server", message)
@@ -126,7 +127,6 @@ function createBot(): Bot {
         }
         setTimeout(tick, 1000/BOT_FPS);
     }
-    setTimeout(tick, 1000/BOT_FPS);
 
     return bot
 }
