@@ -2,7 +2,7 @@ import {WebSocketServer, WebSocket} from 'ws';
 import * as common from './common.mjs'
 import {PlayerMoving, PlayerJoined, PlayerLeft, Player, Event, Hello, Direction} from './common.mjs'
 
-const SERVER_FPS = 30;
+const SERVER_FPS = 60;
 const SERVER_LIMIT = 69;
 const STATS_AVERAGE_CAPACITY = 30;
 
@@ -161,8 +161,11 @@ wss.on("connection", (ws) => {
     })
 })
 
+let previousTimestamp = performance.now();
 function tick() {
-    const beginTickTime = performance.now();
+    const timestamp = performance.now();
+    const deltaTime = (timestamp - previousTimestamp)/1000
+    previousTimestamp = timestamp;
     let messageSentCounter = 0;
     let bytesSentCounter = 0;
 
@@ -276,11 +279,11 @@ function tick() {
 
 
     // Simulating the world for one server tick.
-    // TODO: simulate at actual deltaTime, so to not break the predictions of players.
-    players.forEach((player) => common.updatePlayer(player, 1/SERVER_FPS))
+    players.forEach((player) => common.updatePlayer(player, deltaTime))
 
+    const tickTime = performance.now() - timestamp;
     stats.ticksCount += 1;
-    pushAverage(stats.tickTimes, (performance.now() - beginTickTime)/1000);
+    pushAverage(stats.tickTimes, tickTime/1000);
     stats.messagesSent += messageSentCounter;
     pushAverage(stats.tickMessagesSent, messageSentCounter);
     pushAverage(stats.tickMessagesReceived, eventQueue.length);
@@ -296,7 +299,7 @@ function tick() {
         printStats()
     }
 
-    setTimeout(tick, 1000/SERVER_FPS);
+    setTimeout(tick, Math.max(0, 1000/SERVER_FPS - tickTime));
 }
 setTimeout(tick, 1000/SERVER_FPS);
 
