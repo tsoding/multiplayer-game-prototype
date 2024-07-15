@@ -57,6 +57,8 @@ function createBot(): Bot {
         }
     })
 
+    // TODO: the logic of turn() could be greatly simplified
+    //   Just pick a random direction and timeoutBeforeTurn on each turn
     function turn() {
         if (bot.me !== undefined) {
             let direction: Direction;
@@ -116,6 +118,7 @@ function createBot(): Bot {
         }
     }
 
+    // TODO: use the same tick variation as in server.mts
     function tick() {
         const deltaTime = 1/BOT_FPS;
         if (bot.timeoutBeforeTurn !== undefined) {
@@ -132,4 +135,4 @@ function createBot(): Bot {
 }
 
 let bots: Array<Bot> = []
-for (let i = 0; i < 20; ++i) bots.push(createBot())
+for (let i = 0; i < 10; ++i) bots.push(createBot())
