@@ -8,7 +8,8 @@ Right now the player is just a simple color rectangle that is controled by arrow
 
 ```console
 $ npm install
-$ npm run watch
+$ npm run build
+$ npm run serve
 ```
 
 Afterwards open http://localhost:6969/ in several browsers and control your player with arrows.

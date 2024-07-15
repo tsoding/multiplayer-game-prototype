@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc",
-    "watch": "node watch.js",
+    "watch": "tsc -w",
+    "serve": "node serve.js",
+    "bots": "node bot.mjs",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
