@@ -47,14 +47,14 @@ const DIRECTION_KEYS: {[key: string]: Direction} = {
                     hue: message.hue,
                 };
                 players.set(message.id, me)
-                console.log(`Connected as player ${me.id}`);
+                // console.log(`Connected as player ${me.id}`);
             } else {
                 console.log("Received bogus-amogus message from server", message)
                 ws.close();
             }
         } else {
             const message = JSON.parse(event.data)
-            console.log('Received message', message);
+            // console.log('Received message', message);
             if (common.isPlayerJoined(message)) {
                 players.set(message.id, {
                     id: message.id,
