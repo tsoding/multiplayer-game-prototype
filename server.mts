@@ -2,75 +2,76 @@ import {WebSocketServer, WebSocket} from 'ws';
 import * as common from './common.mjs'
 import {PlayerMoving, PlayerJoined, PlayerLeft, Player, Event, Hello, Direction} from './common.mjs'
 
+namespace Stats {
+    const AVERAGE_CAPACITY = 30;
+
+    export interface Counter {
+        kind: 'counter',
+        counter: number,
+        description: string,
+    }
+
+    export interface Average {
+        kind: 'average',
+        samples: Array<number>,
+        description: string
+    }
+
+    export interface Timer {
+        kind: 'timer',
+        startedAt: number,
+        description: string,
+    }
+
+    type Stat = Counter | Average | Timer;
+    type Stats = {[key: string]: Stat}
+    const stats: Stats = {}
+
+    function average(xs: Array<number>): number {
+        while (xs.length > AVERAGE_CAPACITY) xs.shift();
+        return xs.reduce((a, b) => a + b, 0)/xs.length
+    }
+
+    function getStat(stat: Stat): number {
+        switch (stat.kind) {
+            case 'counter': return stat.counter;
+            case 'average': return average(stat.samples);
+            case 'timer':   return performance.now() - stat.startedAt;
+        }
+    }
+
+    function register<T extends Stat>(name: string, stat: T): T {
+        stats[name] = stat;
+        return stat;
+    }
+
+    export function print() {
+        console.log("Stats:")
+        for (let key in stats) {
+            console.log(`  ${stats[key].description}`, getStat(stats[key]));
+        }
+    }
+
+    export const uptime               : Timer   = register("uptime",               {kind: 'timer', startedAt: 0, description: "Uptime (secs)"});
+    export const ticksCount           : Counter = register("ticksCount",           {kind: 'counter', counter: 0, description: "Ticks count",});
+    export const tickTimes            : Average = register("tickTimes",            {kind: 'average', samples: [], description: "Average time to process a tick",});
+    export const messagesSent         : Counter = register("messagesSent",         {kind: 'counter', counter: 0, description: 'Total messages sent',});
+    export const messagesReceived     : Counter = register("messagesReceived",     {kind: 'counter', counter: 0, description: 'Total messages received',});
+    export const tickMessagesSent     : Average = register("tickMessagesSent",     {kind: 'average', samples: [], description: "Average messages sent per tick",});
+    export const tickMessagesReceived : Average = register("tickMessagesReceived", {kind: 'average', samples: [], description: "Average messages received per tick",});
+    export const bytesSent            : Counter = register("bytesSent",            {kind: 'counter', counter: 0, description: "Total bytes sent",});
+    export const bytesReceived        : Counter = register("bytesReceived",        {kind: 'counter', counter: 0, description: "Total bytes received",});
+    export const tickByteSent         : Average = register("tickByteSent",         {kind: 'average', samples: [], description: "Average bytes sent per tick",});
+    export const tickByteReceived     : Average = register("tickByteReceived",     {kind: 'average', samples: [], description: "Average bytes received per tick",});
+    export const playersCurrently     : Counter = register("playersCurrently",     {kind: 'counter', counter: 0, description: "Currently players",});
+    export const playersJoined        : Counter = register("playersJoined",        {kind: 'counter', counter: 0, description: "Total players joined",});
+    export const playersLeft          : Counter = register("playersLeft",          {kind: 'counter', counter: 0, description: "Total players left",});
+    export const bogusAmogusMessages  : Counter = register("bogusAmogusMessages",  {kind: 'counter', counter: 0, description: "Total bogus-amogus messages",});
+    export const playersRejected      : Counter = register("playersRejected",      {kind: 'counter', counter: 0, description: "Total players rejected",});
+}
+
 const SERVER_FPS = 60;
 const SERVER_LIMIT = 69;
-const STATS_AVERAGE_CAPACITY = 30;
-
-interface Stats {
-    startedAt: number,
-    ticksCount: number,
-    tickTimes: Array<number>,
-    messagesSent: number,
-    messagesReceived: number,
-    tickMessagesSent: Array<number>,
-    tickMessagesReceived: Array<number>,
-    bytesSent: number,
-    bytesReceived: number,
-    tickByteSent: Array<number>,
-    tickByteReceived: Array<number>,
-    playersJoined: number,
-    playersLeft: number,
-    bogusAmogusMessages: number,
-    playersRejected: number,
-}
-
-const stats: Stats = {
-    ticksCount: 0,
-    tickTimes: [],
-    messagesSent: 0,
-    messagesReceived: 0,
-    tickMessagesSent: [],
-    tickMessagesReceived: [],
-    bytesSent: 0,
-    bytesReceived: 0,
-    tickByteSent: [],
-    tickByteReceived: [],
-    playersJoined: 0,
-    playersLeft: 0,
-    bogusAmogusMessages: 0,
-    startedAt: performance.now(),
-    playersRejected: 0,
-};
-
-function average(xs: Array<number>): number {
-    return xs.reduce((a, b) => a + b, 0)/xs.length
-}
-
-function pushAverage(xs: Array<number>, x: number) {
-    if (xs.push(x) > STATS_AVERAGE_CAPACITY) {
-        xs.shift();
-    }
-}
-
-function printStats() {
-    console.log("Stats:")
-    console.log("  Ticks count", stats.ticksCount)
-    console.log("  Uptime (secs)", (performance.now() - stats.startedAt)/1000);
-    console.log("  Average time to process a tick", average(stats.tickTimes));
-    console.log("  Total messages sent", stats.messagesSent);
-    console.log("  Total messages received", stats.messagesReceived);
-    console.log("  Average messages sent per tick", average(stats.tickMessagesSent));
-    console.log("  Average messages received per tick", average(stats.tickMessagesReceived));
-    console.log("  Total bytes sent", stats.bytesSent);
-    console.log("  Total bytes received", stats.bytesReceived);
-    console.log("  Average bytes sent per tick", average(stats.tickByteSent));
-    console.log("  Average bytes received per tick", average(stats.tickByteReceived));
-    console.log("  Currently players", players.size);
-    console.log("  Total players joined", stats.playersJoined);
-    console.log("  Total players left", stats.playersLeft);
-    console.log("  Total bogus-amogus messages", stats.bogusAmogusMessages);
-    console.log("  Total players rejected", stats.playersRejected);
-}
 
 interface PlayerWithSocket extends Player {
     ws: WebSocket
@@ -92,7 +93,7 @@ function randomStyle(): string {
 
 wss.on("connection", (ws) => {
     if (players.size >= SERVER_LIMIT) {
-        stats.playersRejected += 1
+        Stats.playersRejected.counter += 1
         ws.close();
         return;
     }
@@ -119,16 +120,17 @@ wss.on("connection", (ws) => {
         kind: 'PlayerJoined',
         id, x, y, style
     })
-    stats.playersJoined += 1;
+    Stats.playersJoined.counter += 1;
+    Stats.playersCurrently.counter += 1;
     ws.addEventListener("message", (event) => {
-        stats.messagesReceived += 1;
-        stats.bytesReceived += event.data.toString().length;
+        Stats.messagesReceived.counter += 1;
+        Stats.bytesReceived.counter += event.data.toString().length;
         bytesReceivedWithinTick += event.data.toString().length;
         let message;
         try {
             message = JSON.parse(event.data.toString());
         } catch(e) {
-            stats.bogusAmogusMessages += 1;
+            Stats.bogusAmogusMessages.counter += 1;
             // console.log(`Recieved bogus-amogus message from client ${id} on parsing JSON:`, event.data);
             ws.close();
             return;
@@ -144,7 +146,7 @@ wss.on("connection", (ws) => {
                 direction: message.direction,
             });
         } else {
-            stats.bogusAmogusMessages += 1;
+            Stats.bogusAmogusMessages.counter += 1;
             // console.log(`Received bogus-amogus message from client ${id}:`, message)
             ws.close();
             return;
@@ -153,7 +155,8 @@ wss.on("connection", (ws) => {
     ws.on("close", () => {
         // console.log(`Player ${id} disconnected`);
         players.delete(id);
-        stats.playersLeft += 1;
+        Stats.playersLeft.counter += 1;
+        Stats.playersCurrently.counter -= 1;
         eventQueue.push({
             kind: 'PlayerLeft',
             id
@@ -282,25 +285,26 @@ function tick() {
     players.forEach((player) => common.updatePlayer(player, deltaTime))
 
     const tickTime = performance.now() - timestamp;
-    stats.ticksCount += 1;
-    pushAverage(stats.tickTimes, tickTime/1000);
-    stats.messagesSent += messageSentCounter;
-    pushAverage(stats.tickMessagesSent, messageSentCounter);
-    pushAverage(stats.tickMessagesReceived, eventQueue.length);
-    stats.bytesSent += bytesSentCounter;
-    pushAverage(stats.tickByteSent, bytesSentCounter);
-    pushAverage(stats.tickByteReceived, bytesReceivedWithinTick);
+    Stats.ticksCount.counter += 1;
+    Stats.tickTimes.samples.push(tickTime/1000);
+    Stats.messagesSent.counter += messageSentCounter;
+    Stats.tickMessagesSent.samples.push(messageSentCounter);
+    Stats.tickMessagesReceived.samples.push(eventQueue.length);
+    Stats.bytesSent.counter += bytesSentCounter;
+    Stats.tickByteSent.samples.push(bytesSentCounter);
+    Stats.tickByteReceived.samples.push(bytesReceivedWithinTick);
 
     eventQueue.length = 0;
     bytesReceivedWithinTick = 0;
 
-    if (stats.ticksCount%SERVER_FPS === 0) {
+    if (Stats.ticksCount.counter%SERVER_FPS === 0) {
         // TODO: serve the stats over a separate websocket, so a separate html page can poll it once in a while
-        printStats()
+        Stats.print()
     }
 
     setTimeout(tick, Math.max(0, 1000/SERVER_FPS - tickTime));
 }
+Stats.uptime.startedAt = performance.now()
 setTimeout(tick, 1000/SERVER_FPS);
 
 console.log(`Listening to ws://0.0.0.0:${common.SERVER_PORT}`)
