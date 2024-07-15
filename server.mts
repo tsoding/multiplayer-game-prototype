@@ -27,6 +27,8 @@ namespace Stats {
     type Stats = {[key: string]: Stat}
     const stats: Stats = {}
 
+    // TODO: keeping the AVERAGE_CAPACITY checked relies on calling Stats.print() periodically.
+    //   It would be better to go back to having a custom method for pushing samples
     function average(xs: Array<number>): number {
         while (xs.length > AVERAGE_CAPACITY) xs.shift();
         return xs.reduce((a, b) => a + b, 0)/xs.length
