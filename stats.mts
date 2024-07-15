@@ -1,54 +1,60 @@
 import * as common from "./common.mjs";
-
-const $ = document.querySelector.bind(document);
-declare const Plotly: any //TODO: Add typings for this lib
+import type _Plotly from "plotly.js"
+declare const Plotly: typeof _Plotly
 
 const source = new EventSource(
     `http://${window.location.hostname}:${common.STATS_FEED_PORT}`,
 );
-const target = $("#root");
-if (!target) throw new Error("Event target element not found.");
 
-// Create the chart div
-const chartDiv = document.createElement("div");
-chartDiv.id = "chart";
-target.appendChild(chartDiv);
-
-// Initialize the chart
-Plotly.newPlot("chart", []);
+Plotly.newPlot("counter-chart", []);
+Plotly.newPlot("average-chart", []);
+Plotly.newPlot("timer-chart", []);
 
 // Function to update the chart with the latest data
 function updateChart(data: common.Stats) {
     // Create the chart data for each stat
-    const chartData = Object.keys(data).map((key) => {
+    const counterChartData: Plotly.Data[] = [];
+    const averageChartData: Plotly.Data[] = [];
+    const timerChartData: Plotly.Data[] = [];
+
+    Object.keys(data).forEach((key) => {
         const stat = data[key];
+
         switch (stat.kind) {
-            case "counter":
-                return {
+            case "counter": {
+                counterChartData.push({
                     x: [stat.description],
                     y: [stat.counter],
                     type: "bar",
                     name: stat.description,
-                };
-            case "average":
-                return {
+                });
+                break;
+            }
+            case "average": {
+                averageChartData.push({
                     x: [stat.description],
-                    y: [common.average(stat.samples)],
+                    y: [average(stat.samples)],
                     type: "bar",
                     name: stat.description,
-                };
-            case "timer":
-                return {
+                });
+                break;
+            }
+            case "timer":{
+                timerChartData.push({
                     x: [stat.description],
                     y: [performance.now() - stat.startedAt],
                     type: "bar",
                     name: stat.description,
-                };
+                });
+                break;
+            }
         }
     });
 
     // Update the chart with the new data
-    Plotly.react("chart", chartData);
+    Plotly.react("counter-chart", counterChartData);
+    Plotly.react("average-chart", averageChartData);
+    Plotly.react("timer-chart", timerChartData);
 }
 
 // Update the chart when new data is received
@@ -56,3 +62,7 @@ source.addEventListener("message", (e) => {
     const data = JSON.parse(e.data) as common.Stats;
     updateChart(data);
 });
+
+function average(xs: number[]): number {
+    return xs.reduce((acc, x) => acc + x, 0) / xs.length;
+}

@@ -4,6 +4,7 @@ import {PlayerMoving, PlayerJoined, PlayerLeft, Player, Event, Hello, Direction}
 import http from "node:http";
 
 namespace Stats {
+    export const AVERAGE_CAPACITY = 30;
     const STATS_FEED_INTERVAL_MS = 2000;
     const stats: common.Stats = {}
 
@@ -30,7 +31,7 @@ namespace Stats {
     function getStat(stat: common.Stat): number {
         switch (stat.kind) {
             case 'counter': return stat.counter;
-            case 'average': return common.average(stat.samples);
+            case 'average': return average(stat.samples);
             case 'timer':   return performance.now() - stat.startedAt;
         }
     }
@@ -45,6 +46,13 @@ namespace Stats {
         for (let key in stats) {
             console.log(`  ${stats[key].description}`, getStat(stats[key]));
         }
+    }
+
+    // TODO: keeping the AVERAGE_CAPACITY checked relies on calling Stats.print() periodically.
+    //   It would be better to go back to having a custom method for pushing samples
+    function average(xs: Array<number>): number {
+        while (xs.length > AVERAGE_CAPACITY) xs.shift();
+        return xs.reduce((a, b) => a + b, 0)/xs.length
     }
 
     export const uptime               : common.Timer   = register("uptime",               {kind: 'timer', startedAt: 0, description: "Uptime (secs)"});

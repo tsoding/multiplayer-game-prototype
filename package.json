@@ -13,6 +13,7 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "@types/plotly.js": "^2.33.0",
     "@types/ws": "^8.5.10",
     "http-server": "^14.1.1",
     "typescript": "^5.5.3"

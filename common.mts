@@ -1,8 +1,7 @@
-import type * as ws from 'ws';
+import type * as ws from "ws";
 
 export const SERVER_PORT = 6970;
 export const STATS_FEED_PORT = 6971;
-export const AVERAGE_CAPACITY = 30;
 export const WORLD_FACTOR = 200;
 export const WORLD_WIDTH = 4*WORLD_FACTOR;
 export const WORLD_HEIGHT = 3*WORLD_FACTOR;
@@ -10,19 +9,19 @@ export const PLAYER_SIZE = 30;
 export const PLAYER_SPEED = 500;
 
 export interface Counter {
-    kind: 'counter',
+    kind: "counter",
     counter: number,
     description: string,
 }
 
 export interface Average {
-    kind: 'average',
+    kind: "average",
     samples: Array<number>,
     description: string
 }
 
 export interface Timer {
-    kind: 'timer',
+    kind: "timer",
     startedAt: number,
     description: string,
 }
@@ -30,14 +29,8 @@ export interface Timer {
 export type Stat = Counter | Average | Timer;
 export type Stats = {[key: string]: Stat}
 
-export type Direction = 'left' | 'right' | 'up' | 'down';
+export type Direction = "left" | "right" | "up" | "down";
 
-// TODO: keeping the AVERAGE_CAPACITY checked relies on calling Stats.print() periodically.
-//   It would be better to go back to having a custom method for pushing samples
-export function average(xs: Array<number>): number {
-    while (xs.length > AVERAGE_CAPACITY) xs.shift();
-    return xs.reduce((a, b) => a + b, 0)/xs.length
-}
 
 type Moving = {
     [key in Direction]: boolean
@@ -45,10 +38,10 @@ type Moving = {
 
 export type Vector2 = {x: number, y: number};
 export const DIRECTION_VECTORS: {[key in Direction]: Vector2} = {
-    'left':  {x: -1, y: 0},
-    'right': {x: 1, y: 0},
-    'up':    {x: 0, y: -1},
-    'down':  {x: 0, y: 1},
+    "left":  {x: -1, y: 0},
+    "right": {x: 1, y: 0},
+    "up":    {x: 0, y: -1},
+    "down":  {x: 0, y: 1},
 };
 
 function isDirection(arg: any): arg is Direction {
@@ -64,15 +57,15 @@ export interface Player {
 }
 
 export function isNumber(arg: any): arg is number {
-    return typeof(arg) === 'number';
+    return typeof(arg) === "number";
 }
 
 export function isString(arg: any): arg is string {
-    return typeof(arg) === 'string';
+    return typeof(arg) === "string";
 }
 
 export function isBoolean(arg: any): arg is boolean {
-    return typeof(arg) === 'boolean';
+    return typeof(arg) === "boolean";
 }
 
 export interface Hello {
@@ -85,12 +78,12 @@ export interface Hello {
 
 export function isHello(arg: any): arg is Hello {
     return arg
-        && arg.kind === 'Hello'
+        && arg.kind === "Hello"
         && isNumber(arg.id);
 }
 
 export interface PlayerJoined {
-    kind: 'PlayerJoined',
+    kind: "PlayerJoined",
     id: number,
     x: number,
     y: number,
@@ -99,7 +92,7 @@ export interface PlayerJoined {
 
 export function isPlayerJoined(arg: any): arg is PlayerJoined {
     return arg
-        && arg.kind === 'PlayerJoined'
+        && arg.kind === "PlayerJoined"
         && isNumber(arg.id)
         && isNumber(arg.x)
         && isNumber(arg.y)
@@ -107,31 +100,31 @@ export function isPlayerJoined(arg: any): arg is PlayerJoined {
 }
 
 export interface PlayerLeft {
-    kind: 'PlayerLeft',
+    kind: "PlayerLeft",
     id: number,
 }
 
 export function isPlayerLeft(arg: any): arg is PlayerLeft {
     return arg
-        && arg.kind === 'PlayerLeft'
+        && arg.kind === "PlayerLeft"
         && isNumber(arg.id)
 }
 
 export interface AmmaMoving {
-    kind: 'AmmaMoving',
+    kind: "AmmaMoving",
     start: boolean,
     direction: Direction,
 }
 
 export function isAmmaMoving(arg: any): arg is AmmaMoving {
     return arg
-        && arg.kind === 'AmmaMoving'
+        && arg.kind === "AmmaMoving"
         && isBoolean(arg.start)
         && isDirection(arg.direction);
 }
 
 export interface PlayerMoving {
-    kind: 'PlayerMoving',
+    kind: "PlayerMoving",
     id: number,
     x: number,
     y: number,
@@ -141,7 +134,7 @@ export interface PlayerMoving {
 
 export function isPlayerMoving(arg: any): arg is PlayerMoving {
     return arg
-        && arg.kind === 'PlayerMoving'
+        && arg.kind === "PlayerMoving"
         && isNumber(arg.id)
         && isNumber(arg.x)
         && isNumber(arg.y)
