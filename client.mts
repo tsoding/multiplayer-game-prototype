@@ -44,7 +44,7 @@ const DIRECTION_KEYS: {[key: string]: Direction} = {
                         'up': false,
                         'down': false,
                     },
-                    style: message.style,
+                    hue: message.hue,
                 };
                 players.set(message.id, me)
                 console.log(`Connected as player ${me.id}`);
@@ -66,7 +66,7 @@ const DIRECTION_KEYS: {[key: string]: Direction} = {
                         'up': false,
                         'down': false,
                     },
-                    style: message.style,
+                    hue: message.hue,
                 })
             } else if (common.isPlayerLeft(message)) {
                 players.delete(message.id)
@@ -101,14 +101,14 @@ const DIRECTION_KEYS: {[key: string]: Direction} = {
         players.forEach((player) => {
             if (me !== undefined && me.id !== player.id) {
                 common.updatePlayer(player, deltaTime);
-                ctx.fillStyle = player.style;
+                ctx.fillStyle = `hsl(${player.hue} 70% 40%)`;
                 ctx.fillRect(player.x, player.y, common.PLAYER_SIZE, common.PLAYER_SIZE);
             }
         })
 
         if (me !== undefined) {
             common.updatePlayer(me, deltaTime);
-            ctx.fillStyle = me.style;
+            ctx.fillStyle = `hsl(${me.hue} 100% 40%)`;
             ctx.fillRect(me.x, me.y, common.PLAYER_SIZE, common.PLAYER_SIZE);
 
             ctx.strokeStyle = "white";

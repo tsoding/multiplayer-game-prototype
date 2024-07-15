@@ -87,10 +87,6 @@ const wss = new WebSocketServer({
 const joinedIds = new Set<number>()
 const leftIds = new Set<number>()
 
-function randomStyle(): string {
-    return `hsl(${Math.floor(Math.random()*360)} 80% 50%)`
-}
-
 wss.on("connection", (ws) => {
     if (players.size >= SERVER_LIMIT) {
         Stats.playersRejected.counter += 1
@@ -100,7 +96,7 @@ wss.on("connection", (ws) => {
     const id = idCounter++;
     const x = Math.random()*(common.WORLD_WIDTH - common.PLAYER_SIZE);
     const y = Math.random()*(common.WORLD_HEIGHT - common.PLAYER_SIZE);
-    const style = randomStyle();
+    const hue = Math.floor(Math.random()*360);
     const player = {
         ws,
         id,
@@ -112,13 +108,13 @@ wss.on("connection", (ws) => {
             'up': false,
             'down': false,
         },
-        style
+        hue,
     }
     players.set(id, player);
     // console.log(`Player ${id} connected`);
     eventQueue.push({
         kind: 'PlayerJoined',
-        id, x, y, style
+        id, x, y, hue
     })
     Stats.playersJoined.counter += 1;
     Stats.playersCurrently.counter += 1;
@@ -199,7 +195,7 @@ function tick() {
                 id: joinedPlayer.id,
                 x: joinedPlayer.x,
                 y: joinedPlayer.y,
-                style: joinedPlayer.style,
+                hue: joinedPlayer.hue,
             })
             messageSentCounter += 1
             // Reconstructing the state of the other players
@@ -210,7 +206,7 @@ function tick() {
                         id: otherPlayer.id,
                         x: otherPlayer.x,
                         y: otherPlayer.y,
-                        style: otherPlayer.style,
+                        hue: otherPlayer.hue,
                     })
                     messageSentCounter += 1
                     let direction: Direction;
@@ -243,7 +239,7 @@ function tick() {
                         id: joinedPlayer.id,
                         x: joinedPlayer.x,
                         y: joinedPlayer.y,
-                        style: joinedPlayer.style,
+                        hue: joinedPlayer.hue,
                     })
                     messageSentCounter += 1
                 }

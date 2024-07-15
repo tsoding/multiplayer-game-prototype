@@ -36,7 +36,7 @@ function createBot(): Bot {
                         'up': false,
                         'down': false,
                     },
-                    style: message.style,
+                    hue: message.hue,
                 };
                 turn();
                 setTimeout(tick, 1000/BOT_FPS);

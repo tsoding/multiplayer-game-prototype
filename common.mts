@@ -30,7 +30,7 @@ export interface Player {
     x: number,
     y: number,
     moving: Moving,
-    style: string,
+    hue: number,
 }
 
 export function isNumber(arg: any): arg is number {
@@ -50,7 +50,7 @@ export interface Hello {
     id: number,
     x: number,
     y: number,
-    style: string,
+    hue: number,
 }
 
 export function isHello(arg: any): arg is Hello {
@@ -64,7 +64,7 @@ export interface PlayerJoined {
     id: number,
     x: number,
     y: number,
-    style: string,
+    hue: number,
 }
 
 export function isPlayerJoined(arg: any): arg is PlayerJoined {
@@ -73,7 +73,7 @@ export function isPlayerJoined(arg: any): arg is PlayerJoined {
         && isNumber(arg.id)
         && isNumber(arg.x)
         && isNumber(arg.y)
-        && isString(arg.style)
+        && isNumber(arg.hue)
 }
 
 export interface PlayerLeft {
