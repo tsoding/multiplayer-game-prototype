@@ -21,6 +21,7 @@ interface Stats {
     playersJoined: number,
     playersLeft: number,
     bogusAmogusMessages: number,
+    playersRejected: number,
 }
 
 const stats: Stats = {
@@ -38,6 +39,7 @@ const stats: Stats = {
     playersLeft: 0,
     bogusAmogusMessages: 0,
     startedAt: performance.now(),
+    playersRejected: 0,
 };
 
 function average(xs: Array<number>): number {
@@ -67,6 +69,7 @@ function printStats() {
     console.log("  Total players joined", stats.playersJoined);
     console.log("  Total players left", stats.playersLeft);
     console.log("  Total bogus-amogus messages", stats.bogusAmogusMessages);
+    console.log("  Total players rejected", stats.playersRejected);
 }
 
 interface PlayerWithSocket extends Player {
@@ -89,6 +92,7 @@ function randomStyle(): string {
 
 wss.on("connection", (ws) => {
     if (players.size >= SERVER_LIMIT) {
+        stats.playersRejected += 1
         ws.close();
         return;
     }
