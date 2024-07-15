@@ -1,13 +1,43 @@
 import type * as ws from 'ws';
 
 export const SERVER_PORT = 6970;
+export const STATS_FEED_PORT = 6971;
+export const AVERAGE_CAPACITY = 30;
 export const WORLD_FACTOR = 200;
 export const WORLD_WIDTH = 4*WORLD_FACTOR;
 export const WORLD_HEIGHT = 3*WORLD_FACTOR;
 export const PLAYER_SIZE = 30;
 export const PLAYER_SPEED = 500;
 
+export interface Counter {
+    kind: 'counter',
+    counter: number,
+    description: string,
+}
+
+export interface Average {
+    kind: 'average',
+    samples: Array<number>,
+    description: string
+}
+
+export interface Timer {
+    kind: 'timer',
+    startedAt: number,
+    description: string,
+}
+
+export type Stat = Counter | Average | Timer;
+export type Stats = {[key: string]: Stat}
+
 export type Direction = 'left' | 'right' | 'up' | 'down';
+
+// TODO: keeping the AVERAGE_CAPACITY checked relies on calling Stats.print() periodically.
+//   It would be better to go back to having a custom method for pushing samples
+export function average(xs: Array<number>): number {
+    while (xs.length > AVERAGE_CAPACITY) xs.shift();
+    return xs.reduce((a, b) => a + b, 0)/xs.length
+}
 
 type Moving = {
     [key in Direction]: boolean

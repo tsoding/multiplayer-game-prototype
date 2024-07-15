@@ -1,48 +1,41 @@
 import {WebSocketServer, WebSocket} from 'ws';
 import * as common from './common.mjs'
 import {PlayerMoving, PlayerJoined, PlayerLeft, Player, Event, Hello, Direction} from './common.mjs'
+import http from "node:http";
 
 namespace Stats {
-    const AVERAGE_CAPACITY = 30;
+    const STATS_FEED_INTERVAL_MS = 2000;
+    const stats: common.Stats = {}
 
-    export interface Counter {
-        kind: 'counter',
-        counter: number,
-        description: string,
-    }
+    export const server = http.createServer((req, res) => { 
+        console.log("New client connected to stats server.", req.headers['user-agent']);
+        res.writeHead(200, {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            'Access-Control-Allow-Origin': '*',
+            'Connection': 'keep-alive'
+        });
+        const timer = setInterval(()=> {
+            const msg = `data:${JSON.stringify(stats)} \n\n`
+            res.write(msg);
+        }, STATS_FEED_INTERVAL_MS);
+        req.on("close", () => clearInterval(timer));
+    }).listen(
+        common.STATS_FEED_PORT,
+        undefined,
+        undefined, 
+        () => console.log("Stats feed listening to http://0.0.0.0:" + common.STATS_FEED_PORT)
+    );
 
-    export interface Average {
-        kind: 'average',
-        samples: Array<number>,
-        description: string
-    }
-
-    export interface Timer {
-        kind: 'timer',
-        startedAt: number,
-        description: string,
-    }
-
-    type Stat = Counter | Average | Timer;
-    type Stats = {[key: string]: Stat}
-    const stats: Stats = {}
-
-    // TODO: keeping the AVERAGE_CAPACITY checked relies on calling Stats.print() periodically.
-    //   It would be better to go back to having a custom method for pushing samples
-    function average(xs: Array<number>): number {
-        while (xs.length > AVERAGE_CAPACITY) xs.shift();
-        return xs.reduce((a, b) => a + b, 0)/xs.length
-    }
-
-    function getStat(stat: Stat): number {
+    function getStat(stat: common.Stat): number {
         switch (stat.kind) {
             case 'counter': return stat.counter;
-            case 'average': return average(stat.samples);
+            case 'average': return common.average(stat.samples);
             case 'timer':   return performance.now() - stat.startedAt;
         }
     }
 
-    function register<T extends Stat>(name: string, stat: T): T {
+    function register<T extends common.Stat>(name: string, stat: T): T {
         stats[name] = stat;
         return stat;
     }
@@ -54,22 +47,22 @@ namespace Stats {
         }
     }
 
-    export const uptime               : Timer   = register("uptime",               {kind: 'timer', startedAt: 0, description: "Uptime (secs)"});
-    export const ticksCount           : Counter = register("ticksCount",           {kind: 'counter', counter: 0, description: "Ticks count",});
-    export const tickTimes            : Average = register("tickTimes",            {kind: 'average', samples: [], description: "Average time to process a tick",});
-    export const messagesSent         : Counter = register("messagesSent",         {kind: 'counter', counter: 0, description: 'Total messages sent',});
-    export const messagesReceived     : Counter = register("messagesReceived",     {kind: 'counter', counter: 0, description: 'Total messages received',});
-    export const tickMessagesSent     : Average = register("tickMessagesSent",     {kind: 'average', samples: [], description: "Average messages sent per tick",});
-    export const tickMessagesReceived : Average = register("tickMessagesReceived", {kind: 'average', samples: [], description: "Average messages received per tick",});
-    export const bytesSent            : Counter = register("bytesSent",            {kind: 'counter', counter: 0, description: "Total bytes sent",});
-    export const bytesReceived        : Counter = register("bytesReceived",        {kind: 'counter', counter: 0, description: "Total bytes received",});
-    export const tickByteSent         : Average = register("tickByteSent",         {kind: 'average', samples: [], description: "Average bytes sent per tick",});
-    export const tickByteReceived     : Average = register("tickByteReceived",     {kind: 'average', samples: [], description: "Average bytes received per tick",});
-    export const playersCurrently     : Counter = register("playersCurrently",     {kind: 'counter', counter: 0, description: "Currently players",});
-    export const playersJoined        : Counter = register("playersJoined",        {kind: 'counter', counter: 0, description: "Total players joined",});
-    export const playersLeft          : Counter = register("playersLeft",          {kind: 'counter', counter: 0, description: "Total players left",});
-    export const bogusAmogusMessages  : Counter = register("bogusAmogusMessages",  {kind: 'counter', counter: 0, description: "Total bogus-amogus messages",});
-    export const playersRejected      : Counter = register("playersRejected",      {kind: 'counter', counter: 0, description: "Total players rejected",});
+    export const uptime               : common.Timer   = register("uptime",               {kind: 'timer', startedAt: 0, description: "Uptime (secs)"});
+    export const ticksCount           : common.Counter = register("ticksCount",           {kind: 'counter', counter: 0, description: "Ticks count",});
+    export const tickTimes            : common.Average = register("tickTimes",            {kind: 'average', samples: [], description: "Average time to process a tick",});
+    export const messagesSent         : common.Counter = register("messagesSent",         {kind: 'counter', counter: 0, description: 'Total messages sent',});
+    export const messagesReceived     : common.Counter = register("messagesReceived",     {kind: 'counter', counter: 0, description: 'Total messages received',});
+    export const tickMessagesSent     : common.Average = register("tickMessagesSent",     {kind: 'average', samples: [], description: "Average messages sent per tick",});
+    export const tickMessagesReceived : common.Average = register("tickMessagesReceived", {kind: 'average', samples: [], description: "Average messages received per tick",});
+    export const bytesSent            : common.Counter = register("bytesSent",            {kind: 'counter', counter: 0, description: "Total bytes sent",});
+    export const bytesReceived        : common.Counter = register("bytesReceived",        {kind: 'counter', counter: 0, description: "Total bytes received",});
+    export const tickByteSent         : common.Average = register("tickByteSent",         {kind: 'average', samples: [], description: "Average bytes sent per tick",});
+    export const tickByteReceived     : common.Average = register("tickByteReceived",     {kind: 'average', samples: [], description: "Average bytes received per tick",});
+    export const playersCurrently     : common.Counter = register("playersCurrently",     {kind: 'counter', counter: 0, description: "Currently players",});
+    export const playersJoined        : common.Counter = register("playersJoined",        {kind: 'counter', counter: 0, description: "Total players joined",});
+    export const playersLeft          : common.Counter = register("playersLeft",          {kind: 'counter', counter: 0, description: "Total players left",});
+    export const bogusAmogusMessages  : common.Counter = register("bogusAmogusMessages",  {kind: 'counter', counter: 0, description: "Total bogus-amogus messages",});
+    export const playersRejected      : common.Counter = register("playersRejected",      {kind: 'counter', counter: 0, description: "Total players rejected",});
 }
 
 const SERVER_FPS = 60;
@@ -295,14 +288,14 @@ function tick() {
     eventQueue.length = 0;
     bytesReceivedWithinTick = 0;
 
-    if (Stats.ticksCount.counter%SERVER_FPS === 0) {
+    // if (Stats.ticksCount.counter%SERVER_FPS === 0) {
         // TODO: serve the stats over a separate websocket, so a separate html page can poll it once in a while
-        Stats.print()
-    }
+        // console.log(Stats.print())
+    // }
 
     setTimeout(tick, Math.max(0, 1000/SERVER_FPS - tickTime));
 }
 Stats.uptime.startedAt = performance.now()
 setTimeout(tick, 1000/SERVER_FPS);
 
-console.log(`Listening to ws://0.0.0.0:${common.SERVER_PORT}`)
+console.log(`WSS listening to ws://0.0.0.0:${common.SERVER_PORT}`)
