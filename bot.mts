@@ -3,7 +3,7 @@ import * as common from './common.mjs';
 import type {Player, AmmaMoving, Direction} from './common.mjs'
 
 const EPS = 10;
-const BOT_FPS = 30;
+const BOT_FPS = 60;
 
 interface Bot {
     ws: WebSocket,
@@ -118,9 +118,11 @@ function createBot(): Bot {
         }
     }
 
-    // TODO: use the same tick variation as in server.mts
+    let previousTimestamp = 0;
     function tick() {
-        const deltaTime = 1/BOT_FPS;
+        const timestamp = performance.now();
+        const deltaTime = (timestamp - previousTimestamp)/1000;
+        previousTimestamp = timestamp;
         if (bot.timeoutBeforeTurn !== undefined) {
             bot.timeoutBeforeTurn -= deltaTime;
             if (bot.timeoutBeforeTurn <= 0) turn();
@@ -128,11 +130,11 @@ function createBot(): Bot {
         if (bot.me !== undefined) {
             common.updatePlayer(bot.me, deltaTime)
         }
-        setTimeout(tick, 1000/BOT_FPS);
+        setTimeout(tick, Math.max(0, 1000/BOT_FPS - timestamp));
     }
 
     return bot
 }
 
 let bots: Array<Bot> = []
-for (let i = 0; i < 10; ++i) bots.push(createBot())
+for (let i = 0; i < 30; ++i) bots.push(createBot())
