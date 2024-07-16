@@ -32,11 +32,30 @@ namespace Stats {
         return samples.reduce((a, b) => a + b, 0)/samples.length
     }
 
-    function getStat(stat: Stat): number {
+    function pluralNumber(num: number, singular: string, plural: string): string {
+        return num === 1 ? singular : plural;
+    }
+
+    function displayTimeInterval(diffMs: number): string {
+        const result = []
+        const diffSecs = Math.floor(diffMs/1000);
+
+        const days = Math.floor(diffSecs/60/60/24)
+        if (days > 0) result.push(`${days} ${pluralNumber(days, 'day', 'days')}`);
+        const hours = Math.floor(diffSecs/60/60%24);
+        if (hours > 0) result.push(`${hours} ${pluralNumber(hours, 'hour', 'hours')}`);
+        const mins = Math.floor(diffSecs/60%60);
+        if (mins > 0) result.push(`${mins} ${pluralNumber(mins, 'min', 'mins')}`);
+        const secs = Math.floor(diffSecs%60);
+        if (secs > 0) result.push(`${secs} ${pluralNumber(secs, 'sec', 'secs')}`);
+        return result.length === 0 ? '0 secs' : result.join(' ');
+    }
+
+    function getStat(stat: Stat): string {
         switch (stat.kind) {
-            case 'counter': return stat.counter;
-            case 'average': return average(stat.samples);
-            case 'timer':   return performance.now() - stat.startedAt;
+            case 'counter': return stat.counter.toString();
+            case 'average': return average(stat.samples).toString();
+            case 'timer':   return displayTimeInterval(Date.now() - stat.startedAt);
         }
     }
 
@@ -83,7 +102,7 @@ namespace Stats {
         }
     }
 
-    export const uptime               = registerTimer  ("uptime",               "Uptime (secs)");
+    export const uptime               = registerTimer  ("uptime",               "Uptime");
     export const ticksCount           = registerCounter("ticksCount",           "Ticks count");
     export const tickTimes            = registerAverage("tickTimes",            "Average time to process a tick");
     export const messagesSent         = registerCounter("messagesSent",         "Total messages sent");
@@ -331,7 +350,7 @@ function tick() {
 
     setTimeout(tick, Math.max(0, 1000/SERVER_FPS - tickTime));
 }
-Stats.uptime.startedAt = performance.now()
+Stats.uptime.startedAt = Date.now()
 setTimeout(tick, 1000/SERVER_FPS);
 
 console.log(`Listening to ws://0.0.0.0:${common.SERVER_PORT}`)
