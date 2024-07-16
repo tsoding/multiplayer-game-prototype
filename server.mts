@@ -12,9 +12,10 @@ namespace Stats {
     }
 
     export interface Average {
-        kind: 'average',
-        samples: Array<number>,
-        description: string
+        kind: 'average';
+        samples: Array<number>;
+        description: string;
+        pushSample(sample: number): void;
     }
 
     export interface Timer {
@@ -27,11 +28,8 @@ namespace Stats {
     type Stats = {[key: string]: Stat}
     const stats: Stats = {}
 
-    // TODO: keeping the AVERAGE_CAPACITY checked relies on calling Stats.print() periodically.
-    //   It would be better to go back to having a custom method for pushing samples
-    function average(xs: Array<number>): number {
-        while (xs.length > AVERAGE_CAPACITY) xs.shift();
-        return xs.reduce((a, b) => a + b, 0)/xs.length
+    function average(samples: Array<number>): number {
+        return samples.reduce((a, b) => a + b, 0)/samples.length
     }
 
     function getStat(stat: Stat): number {
@@ -42,7 +40,38 @@ namespace Stats {
         }
     }
 
-    function register<T extends Stat>(name: string, stat: T): T {
+    function registerCounter(name: string, description: string): Counter {
+        const stat: Counter = {
+            kind: 'counter',
+            counter: 0,
+            description,
+        }
+        stats[name] = stat;
+        return stat;
+    }
+
+    function pushSample(this: Average, sample: number) {
+        while (this.samples.length > AVERAGE_CAPACITY) this.samples.shift();
+        this.samples.push(sample);
+    }
+
+    function registerAverage(name: string, description: string): Average {
+        const stat: Average = {
+            kind: 'average',
+            samples: [],
+            description,
+            pushSample,
+        }
+        stats[name] = stat;
+        return stat;
+    }
+
+    function registerTimer(name: string, description: string): Timer {
+        const stat: Timer = {
+            kind: 'timer',
+            startedAt: 0,
+            description,
+        }
         stats[name] = stat;
         return stat;
     }
@@ -54,22 +83,22 @@ namespace Stats {
         }
     }
 
-    export const uptime               : Timer   = register("uptime",               {kind: 'timer', startedAt: 0, description: "Uptime (secs)"});
-    export const ticksCount           : Counter = register("ticksCount",           {kind: 'counter', counter: 0, description: "Ticks count",});
-    export const tickTimes            : Average = register("tickTimes",            {kind: 'average', samples: [], description: "Average time to process a tick",});
-    export const messagesSent         : Counter = register("messagesSent",         {kind: 'counter', counter: 0, description: 'Total messages sent',});
-    export const messagesReceived     : Counter = register("messagesReceived",     {kind: 'counter', counter: 0, description: 'Total messages received',});
-    export const tickMessagesSent     : Average = register("tickMessagesSent",     {kind: 'average', samples: [], description: "Average messages sent per tick",});
-    export const tickMessagesReceived : Average = register("tickMessagesReceived", {kind: 'average', samples: [], description: "Average messages received per tick",});
-    export const bytesSent            : Counter = register("bytesSent",            {kind: 'counter', counter: 0, description: "Total bytes sent",});
-    export const bytesReceived        : Counter = register("bytesReceived",        {kind: 'counter', counter: 0, description: "Total bytes received",});
-    export const tickByteSent         : Average = register("tickByteSent",         {kind: 'average', samples: [], description: "Average bytes sent per tick",});
-    export const tickByteReceived     : Average = register("tickByteReceived",     {kind: 'average', samples: [], description: "Average bytes received per tick",});
-    export const playersCurrently     : Counter = register("playersCurrently",     {kind: 'counter', counter: 0, description: "Currently players",});
-    export const playersJoined        : Counter = register("playersJoined",        {kind: 'counter', counter: 0, description: "Total players joined",});
-    export const playersLeft          : Counter = register("playersLeft",          {kind: 'counter', counter: 0, description: "Total players left",});
-    export const bogusAmogusMessages  : Counter = register("bogusAmogusMessages",  {kind: 'counter', counter: 0, description: "Total bogus-amogus messages",});
-    export const playersRejected      : Counter = register("playersRejected",      {kind: 'counter', counter: 0, description: "Total players rejected",});
+    export const uptime               = registerTimer  ("uptime",               "Uptime (secs)");
+    export const ticksCount           = registerCounter("ticksCount",           "Ticks count");
+    export const tickTimes            = registerAverage("tickTimes",            "Average time to process a tick");
+    export const messagesSent         = registerCounter("messagesSent",         "Total messages sent");
+    export const messagesReceived     = registerCounter("messagesReceived",     "Total messages received");
+    export const tickMessagesSent     = registerAverage("tickMessagesSent",     "Average messages sent per tick");
+    export const tickMessagesReceived = registerAverage("tickMessagesReceived", "Average messages received per tick");
+    export const bytesSent            = registerCounter("bytesSent",            "Total bytes sent");
+    export const bytesReceived        = registerCounter("bytesReceived",        "Total bytes received");
+    export const tickByteSent         = registerAverage("tickByteSent",         "Average bytes sent per tick");
+    export const tickByteReceived     = registerAverage("tickByteReceived",     "Average bytes received per tick");
+    export const playersCurrently     = registerCounter("playersCurrently",     "Currently players");
+    export const playersJoined        = registerCounter("playersJoined",        "Total players joined");
+    export const playersLeft          = registerCounter("playersLeft",          "Total players left");
+    export const bogusAmogusMessages  = registerCounter("bogusAmogusMessages",  "Total bogus-amogus messages");
+    export const playersRejected      = registerCounter("playersRejected",      "Total players rejected");
 }
 
 const SERVER_FPS = 60;
@@ -284,13 +313,13 @@ function tick() {
 
     const tickTime = performance.now() - timestamp;
     Stats.ticksCount.counter += 1;
-    Stats.tickTimes.samples.push(tickTime/1000);
+    Stats.tickTimes.pushSample(tickTime/1000);
     Stats.messagesSent.counter += messageSentCounter;
-    Stats.tickMessagesSent.samples.push(messageSentCounter);
-    Stats.tickMessagesReceived.samples.push(eventQueue.length);
+    Stats.tickMessagesSent.pushSample(messageSentCounter);
+    Stats.tickMessagesReceived.pushSample(eventQueue.length);
     Stats.bytesSent.counter += bytesSentCounter;
-    Stats.tickByteSent.samples.push(bytesSentCounter);
-    Stats.tickByteReceived.samples.push(bytesReceivedWithinTick);
+    Stats.tickByteSent.pushSample(bytesSentCounter);
+    Stats.tickByteReceived.pushSample(bytesReceivedWithinTick);
 
     eventQueue.length = 0;
     bytesReceivedWithinTick = 0;
