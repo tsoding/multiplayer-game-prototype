@@ -2,7 +2,6 @@ import {WebSocket} from 'ws';
 import * as common from './common.mjs';
 import type {Player, AmmaMoving, Direction} from './common.mjs'
 
-const EPS = 10;
 const BOT_FPS = 60;
 
 interface Bot {
@@ -57,10 +56,9 @@ function createBot(): Bot {
         }
     })
 
-    // TODO: the logic of turn() could be greatly simplified
-    //   Just pick a random direction and timeoutBeforeTurn on each turn
     function turn() {
         if (bot.me !== undefined) {
+            // Full stop
             let direction: Direction;
             for (direction in bot.me.moving) {
                 if (bot.me.moving[direction]) {
@@ -73,48 +71,16 @@ function createBot(): Bot {
                 }
             }
 
-            bot.timeoutBeforeTurn = undefined
-            do {
-                const dx = bot.goalX - bot.me.x;
-                const dy = bot.goalY - bot.me.y;
-
-                if (Math.abs(dx) > EPS) {
-                    if (dx > 0) {
-                        common.sendMessage<AmmaMoving>(bot.ws, {
-                            kind: 'AmmaMoving',
-                            start: true,
-                            direction: 'right'
-                        })
-                    } else {
-                        common.sendMessage<AmmaMoving>(bot.ws, {
-                            kind: 'AmmaMoving',
-                            start: true,
-                            direction: 'left'
-                        })
-                    }
-                    bot.timeoutBeforeTurn = Math.abs(dx)/common.PLAYER_SPEED;
-                } else if (Math.abs(dy) > EPS) {
-                    if (dy > 0) {
-                        common.sendMessage<AmmaMoving>(bot.ws, {
-                            kind: 'AmmaMoving',
-                            start: true,
-                            direction: 'down'
-                        })
-                    } else {
-                        common.sendMessage<AmmaMoving>(bot.ws, {
-                            kind: 'AmmaMoving',
-                            start: true,
-                            direction: 'up'
-                        })
-                    }
-                    bot.timeoutBeforeTurn = Math.abs(dy)/common.PLAYER_SPEED;
-                }
-
-                if (bot.timeoutBeforeTurn === undefined) {
-                    bot.goalX = Math.random()*common.WORLD_WIDTH;
-                    bot.goalY = Math.random()*common.WORLD_HEIGHT;
-                }
-            } while (bot.timeoutBeforeTurn === undefined);
+            // New direction
+            const directions = Object.keys(bot.me.moving) as Direction[];
+            direction = directions[Math.floor(Math.random()*directions.length)];
+            bot.timeoutBeforeTurn = Math.random()*common.WORLD_WIDTH*0.5/common.PLAYER_SPEED;
+            bot.me.moving[direction] = true;
+            common.sendMessage<AmmaMoving>(bot.ws, {
+                kind: 'AmmaMoving',
+                start: true,
+                direction
+            })
         }
     }
 
