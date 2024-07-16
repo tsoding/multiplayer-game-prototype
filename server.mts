@@ -42,6 +42,28 @@ namespace Stats {
         }
     }
 
+    function formatStat(stat: Stat): string {
+        switch (stat.kind) {
+            case 'counter': return stat.counter.toString();
+            case 'average': return average(stat.samples).toString();
+            case 'timer':
+                const dt = (performance.now() - stat.startedAt)*60;
+                const nsecs = dt/1000;
+                const nmins = dt/1000/60;
+                const nhrs = dt/1000/60/60;
+                const fsecs = Math.floor(nsecs%60).toString().padStart(2,'0');
+                const fmins = Math.floor(nmins%60).toString().padStart(2,'0');
+                const fhrs = Math.floor(nhrs);
+                if (nsecs < 1)
+                    return `${dt}ms`;
+                if (nmins < 1)
+                    return `${(dt/1000).toFixed(3)}s`;
+                if (nhrs < 1)
+                    return `${fmins}:${fsecs}m`;
+                return `${fhrs}:${fmins}:${fsecs}h`;
+        }
+    }
+
     function register<T extends Stat>(name: string, stat: T): T {
         stats[name] = stat;
         return stat;
@@ -50,11 +72,11 @@ namespace Stats {
     export function print() {
         console.log("Stats:")
         for (let key in stats) {
-            console.log(`  ${stats[key].description}`, getStat(stats[key]));
+            console.log(`  ${stats[key].description}`, formatStat(stats[key]));
         }
     }
 
-    export const uptime               : Timer   = register("uptime",               {kind: 'timer', startedAt: 0, description: "Uptime (secs)"});
+    export const uptime               : Timer   = register("uptime",               {kind: 'timer', startedAt: 0, description: "Uptime"});
     export const ticksCount           : Counter = register("ticksCount",           {kind: 'counter', counter: 0, description: "Ticks count",});
     export const tickTimes            : Average = register("tickTimes",            {kind: 'average', samples: [], description: "Average time to process a tick",});
     export const messagesSent         : Counter = register("messagesSent",         {kind: 'counter', counter: 0, description: 'Total messages sent',});
