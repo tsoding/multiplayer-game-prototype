@@ -38,7 +38,7 @@ namespace Stats {
         switch (stat.kind) {
             case 'counter': return stat.counter;
             case 'average': return average(stat.samples);
-            case 'timer':   return performance.now() - stat.startedAt;
+            case 'timer':   return (performance.now() - stat.startedAt)/1000;
         }
     }
 
