@@ -7,7 +7,7 @@
     "build": "tsc",
     "watch": "tsc -w",
     "serve": "node serve.js",
-    "bots": "node bot.mjs",
+    "bots": "node bots.mjs",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
