@@ -20,11 +20,12 @@ const DIRECTION_KEYS: {[key: string]: Direction} = {
     const ctx = gameCanvas.getContext("2d");
     if (ctx === null) throw new Error('2d canvas is not supported');
 
-    const ws = new WebSocket(`ws://${window.location.hostname}:${common.SERVER_PORT}`);
+    let ws: WebSocket | undefined = new WebSocket(`ws://${window.location.hostname}:${common.SERVER_PORT}`);
     let me: Player | undefined = undefined;
     const players = new Map<number, Player>();
     ws.addEventListener("close", (event) => {
         console.log("WEBSOCKET CLOSE", event)
+        ws = undefined
     });
     ws.addEventListener("error", (event) => {
         // TODO: reconnect on errors
@@ -50,7 +51,7 @@ const DIRECTION_KEYS: {[key: string]: Direction} = {
                 // console.log(`Connected as player ${me.id}`);
             } else {
                 console.log("Received bogus-amogus message from server", message)
-                ws.close();
+                ws?.close();
             }
         } else {
             const message = JSON.parse(event.data)
@@ -74,7 +75,7 @@ const DIRECTION_KEYS: {[key: string]: Direction} = {
                 const player = players.get(message.id);
                 if (player === undefined) {
                     console.log(`Received bogus-amogus message from server. We don't know anything about player with id ${message.id}`, message)
-                    ws.close();
+                    ws?.close();
                     return;
                 }
                 player.moving[message.direction] = message.start;
@@ -82,7 +83,7 @@ const DIRECTION_KEYS: {[key: string]: Direction} = {
                 player.y = message.y;
             } else {
                 console.log("Received bogus-amogus message from server", message)
-                ws.close();
+                ws?.close();
             }
         }
     });
@@ -97,25 +98,33 @@ const DIRECTION_KEYS: {[key: string]: Direction} = {
 
         ctx.fillStyle = '#202020';
         ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-        // TODO: indicate different states of the client. Like 'connecting', 'error', etc.
-        players.forEach((player) => {
-            if (me !== undefined && me.id !== player.id) {
-                common.updatePlayer(player, deltaTime);
-                ctx.fillStyle = `hsl(${player.hue} 70% 40%)`;
-                ctx.fillRect(player.x, player.y, common.PLAYER_SIZE, common.PLAYER_SIZE);
+
+        if (ws === undefined) {
+            const label = "Disconnected";
+            const size = ctx.measureText(label);
+            ctx.font = "48px bold";
+            ctx.fillStyle = 'white';
+            ctx.fillText(label, ctx.canvas.width/2 - size.width/2, ctx.canvas.height/2);
+        } else {
+            players.forEach((player) => {
+                if (me !== undefined && me.id !== player.id) {
+                    common.updatePlayer(player, deltaTime);
+                    ctx.fillStyle = `hsl(${player.hue} 70% 40%)`;
+                    ctx.fillRect(player.x, player.y, common.PLAYER_SIZE, common.PLAYER_SIZE);
+                }
+            })
+
+            if (me !== undefined) {
+                common.updatePlayer(me, deltaTime);
+                ctx.fillStyle = `hsl(${me.hue} 100% 40%)`;
+                ctx.fillRect(me.x, me.y, common.PLAYER_SIZE, common.PLAYER_SIZE);
+
+                ctx.strokeStyle = "white";
+                ctx.lineWidth = 4;
+                ctx.beginPath()
+                ctx.strokeRect(me.x, me.y, common.PLAYER_SIZE, common.PLAYER_SIZE);
+                ctx.stroke();
             }
-        })
-
-        if (me !== undefined) {
-            common.updatePlayer(me, deltaTime);
-            ctx.fillStyle = `hsl(${me.hue} 100% 40%)`;
-            ctx.fillRect(me.x, me.y, common.PLAYER_SIZE, common.PLAYER_SIZE);
-
-            ctx.strokeStyle = "white";
-            ctx.lineWidth = 4;
-            ctx.beginPath()
-            ctx.strokeRect(me.x, me.y, common.PLAYER_SIZE, common.PLAYER_SIZE);
-            ctx.stroke();
         }
         window.requestAnimationFrame(frame);
     }
@@ -125,7 +134,7 @@ const DIRECTION_KEYS: {[key: string]: Direction} = {
     });
 
     window.addEventListener("keydown", (e) => {
-        if (me !== undefined) {
+        if (ws !== undefined && me !== undefined) {
             if (!e.repeat) {
                 const direction = DIRECTION_KEYS[e.code];
                 if (direction !== undefined) {
@@ -139,7 +148,7 @@ const DIRECTION_KEYS: {[key: string]: Direction} = {
         }
     });
     window.addEventListener("keyup", (e) => {
-        if (me !== undefined) {
+        if (ws !== undefined && me !== undefined) {
             if (!e.repeat) {
                 const direction = DIRECTION_KEYS[e.code];
                 if (direction !== undefined) {
