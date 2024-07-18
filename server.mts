@@ -139,6 +139,7 @@ const joinedIds = new Set<number>()
 const leftIds = new Set<number>()
 
 wss.on("connection", (ws) => {
+    ws.binaryType = 'arraybuffer';
     if (players.size >= SERVER_LIMIT) {
         Stats.playersRejected.counter += 1
         ws.close();
@@ -172,19 +173,20 @@ wss.on("connection", (ws) => {
         Stats.bytesReceived.counter += event.data.toString().length;
         bytesReceivedWithinTick += event.data.toString().length;
         messagesRecievedWithinTick += 1;
-        let message;
-        try {
-            message = JSON.parse(event.data.toString());
-        } catch(e) {
-            Stats.bogusAmogusMessages.counter += 1;
-            // console.log(`Recieved bogus-amogus message from client ${id} on parsing JSON:`, event.data);
-            ws.close();
-            return;
-        }
-        if (common.isAmmaMoving(message)) {
-            // console.log(`Received message from player ${id}`, message)
-            player.moving[message.direction] = message.start;
-            player.moved = true;
+
+        if (event.data instanceof ArrayBuffer) {
+            const view = new DataView(event.data);
+
+            if (common.AmmaMovingStruct.size === view.byteLength && common.AmmaMovingStruct.kind.read(view, 0) === common.MessageKind.AmmaMoving) {
+                // console.log(`Received message from player ${id}`, message)
+                common.setMovingMask(player.moving, common.AmmaMovingStruct.moving.read(view, 0));
+                player.moved = true;
+            } else {
+                Stats.bogusAmogusMessages.counter += 1;
+                // console.log(`Received bogus-amogus message from client ${id}:`, message)
+                ws.close();
+                return;
+            }
         } else {
             Stats.bogusAmogusMessages.counter += 1;
             // console.log(`Received bogus-amogus message from client ${id}:`, message)

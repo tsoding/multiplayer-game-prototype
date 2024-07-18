@@ -1,5 +1,5 @@
 import * as common from './common.mjs'
-import type {Player, Direction, AmmaMoving} from './common.mjs';
+import type {Player, Direction} from './common.mjs';
 
 const DIRECTION_KEYS: {[key: string]: Direction} = {
     'ArrowLeft'  : 'left',
@@ -138,11 +138,11 @@ const DIRECTION_KEYS: {[key: string]: Direction} = {
             if (!e.repeat) {
                 const direction = DIRECTION_KEYS[e.code];
                 if (direction !== undefined) {
-                    common.sendMessage<AmmaMoving>(ws, {
-                        kind: 'AmmaMoving',
-                        start: true,
-                        direction
-                    })
+                    me.moving[direction] = true;
+                    const view = new DataView(new ArrayBuffer(common.AmmaMovingStruct.size));
+                    common.AmmaMovingStruct.kind.write(view, 0, common.MessageKind.AmmaMoving);
+                    common.AmmaMovingStruct.moving.write(view, 0, common.movingMask(me.moving));
+                    ws.send(view);
                 }
             }
         }
@@ -152,11 +152,11 @@ const DIRECTION_KEYS: {[key: string]: Direction} = {
             if (!e.repeat) {
                 const direction = DIRECTION_KEYS[e.code];
                 if (direction !== undefined) {
-                    common.sendMessage<AmmaMoving>(ws, {
-                        kind: 'AmmaMoving',
-                        start: false,
-                        direction
-                    });
+                    me.moving[direction] = false;
+                    const view = new DataView(new ArrayBuffer(common.AmmaMovingStruct.size));
+                    common.AmmaMovingStruct.kind.write(view, 0, common.MessageKind.AmmaMoving);
+                    common.AmmaMovingStruct.moving.write(view, 0, common.movingMask(me.moving));
+                    ws.send(view);
                 }
             }
         }

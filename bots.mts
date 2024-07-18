@@ -1,6 +1,6 @@
 import {WebSocket} from 'ws';
 import * as common from './common.mjs';
-import type {Player, AmmaMoving, Direction} from './common.mjs'
+import type {Player, Direction} from './common.mjs'
 
 const BOT_FPS = 60;
 
@@ -24,8 +24,8 @@ function createBot(): Bot {
     bot.ws.binaryType = 'arraybuffer';
 
     bot.ws.addEventListener("message", (event) => {
-        if (bot.me === undefined) {
-            if (event.data instanceof ArrayBuffer) {
+        if (event.data instanceof ArrayBuffer) {
+            if (bot.me === undefined) {
                 const view = new DataView(event.data);
                 if (common.HelloStruct.size === view.byteLength && common.HelloStruct.kind.read(view, 0) === common.MessageKind.Hello) {
                     bot.me = {
@@ -48,17 +48,16 @@ function createBot(): Bot {
                     bot.ws.close();
                 }
             } else {
-                console.error("Received bogus-amogus message from server. Expected binary data.", event)
-                bot.ws.close();
-            }
-        } else {
-            if (typeof(event.data) === 'string') {
-                const message = JSON.parse(event.data.toString())
-                if (common.isPlayerMoving(message)) {
-                    if (message.id == bot.me.id) {
-                        bot.me.x = message.x;
-                        bot.me.y = message.y;
-                        bot.me.moving[message.direction] = message.start;
+                const view = new DataView(event.data)
+                if (common.PlayerMovingStruct.size === view.byteLength && common.PlayerMovingStruct.kind.read(view, 0) === common.MessageKind.PlayerMoving) {
+                    const id = common.PlayerMovingStruct.id.read(view, 0);
+                    if (id === bot.me.id) {
+                        const moving = common.PlayerMovingStruct.moving.read(view, 0);
+                        const x = common.PlayerMovingStruct.x.read(view, 0);
+                        const y = common.PlayerMovingStruct.y.read(view, 0);
+                        common.setMovingMask(bot.me.moving, moving);
+                        bot.me.x = x;
+                        bot.me.y = y;
                     }
                 }
             }
@@ -72,11 +71,10 @@ function createBot(): Bot {
             for (direction in bot.me.moving) {
                 if (bot.me.moving[direction]) {
                     bot.me.moving[direction] = false;
-                    common.sendMessage<AmmaMoving>(bot.ws, {
-                        kind: 'AmmaMoving',
-                        start: false,
-                        direction
-                    })
+                    const view = new DataView(new ArrayBuffer(common.AmmaMovingStruct.size));
+                    common.AmmaMovingStruct.kind.write(view, 0, common.MessageKind.AmmaMoving);
+                    common.AmmaMovingStruct.moving.write(view, 0, common.movingMask(bot.me.moving));
+                    bot.ws.send(view);
                 }
             }
 
@@ -85,11 +83,10 @@ function createBot(): Bot {
             direction = directions[Math.floor(Math.random()*directions.length)];
             bot.timeoutBeforeTurn = Math.random()*common.WORLD_WIDTH*0.5/common.PLAYER_SPEED;
             bot.me.moving[direction] = true;
-            common.sendMessage<AmmaMoving>(bot.ws, {
-                kind: 'AmmaMoving',
-                start: true,
-                direction
-            })
+            const view = new DataView(new ArrayBuffer(common.AmmaMovingStruct.size));
+            common.AmmaMovingStruct.kind.write(view, 0, common.MessageKind.AmmaMoving);
+            common.AmmaMovingStruct.moving.write(view, 0, common.movingMask(bot.me.moving));
+            bot.ws.send(view);
         }
     }
 

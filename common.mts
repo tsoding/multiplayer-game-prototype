@@ -80,6 +80,7 @@ export enum MessageKind {
     PlayerJoined,
     PlayerLeft,
     PlayerMoving,
+    AmmaMoving,
 }
 
 interface Field {
@@ -164,18 +165,14 @@ export const PlayerLeftStruct = (() => {
     }
 })();
 
-export interface AmmaMoving {
-    kind: 'AmmaMoving',
-    start: boolean,
-    direction: Direction,
-}
-
-export function isAmmaMoving(arg: any): arg is AmmaMoving {
-    return arg
-        && arg.kind === 'AmmaMoving'
-        && isBoolean(arg.start)
-        && isDirection(arg.direction);
-}
+export const AmmaMovingStruct = (() => {
+    const allocator = { iota: 0 };
+    return {
+        kind   : allocUint8Field(allocator),
+        moving : allocUint8Field(allocator),
+        size : allocator.iota,
+    }
+})();
 
 export const PlayerMovingStruct = (() => {
     const allocator = { iota: 0 };
