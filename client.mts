@@ -60,35 +60,39 @@ const DIRECTION_KEYS: {[key: string]: Direction} = {
                 ws?.close();
             }
         } else {
-            const message = JSON.parse(event.data)
-            if (common.isPlayerJoined(message)) {
-                players.set(message.id, {
-                    id: message.id,
-                    x: message.x,
-                    y: message.y,
-                    moving: {
-                        'left': false,
-                        'right': false,
-                        'up': false,
-                        'down': false,
-                    },
-                    hue: message.hue,
-                })
-            } else if (common.isPlayerLeft(message)) {
-                players.delete(message.id)
-            } else if (common.isPlayerMoving(message)) {
-                const player = players.get(message.id);
-                if (player === undefined) {
-                    console.error(`Received bogus-amogus message from server. We don't know anything about player with id ${message.id}`, message)
+            if (event.data instanceof ArrayBuffer) {
+                const view = new DataView(event.data)
+                if (common.PlayerJoinedStruct.size === view.byteLength && common.PlayerJoinedStruct.kind.read(view, 0) === common.MessageKind.PlayerJoined) {
+                    const id = common.PlayerJoinedStruct.id.read(view, 0);
+                    players.set(id, {
+                        id,
+                        x: common.PlayerJoinedStruct.x.read(view, 0),
+                        y: common.PlayerJoinedStruct.y.read(view, 0),
+                        moving: common.movingFromMask(common.PlayerJoinedStruct.moving.read(view, 0)),
+                        hue: common.PlayerJoinedStruct.hue.read(view, 0)/256*360,
+                    })
+                } else {
+                    console.error("Received bogus-amogus message from server. Incorrect `PlayerJoined` message.", view)
                     ws?.close();
-                    return;
                 }
-                player.moving[message.direction] = message.start;
-                player.x = message.x;
-                player.y = message.y;
             } else {
-                console.error("Received bogus-amogus message from server", message)
-                ws?.close();
+                const message = JSON.parse(event.data)
+                if (common.isPlayerLeft(message)) {
+                    players.delete(message.id)
+                } else if (common.isPlayerMoving(message)) {
+                    const player = players.get(message.id);
+                    if (player === undefined) {
+                        console.error(`Received bogus-amogus message from server. We don't know anything about player with id ${message.id}`, message)
+                        ws?.close();
+                        return;
+                    }
+                    player.moving[message.direction] = message.start;
+                    player.x = message.x;
+                    player.y = message.y;
+                } else {
+                    console.error("Received bogus-amogus message from server", message)
+                    ws?.close();
+                }
             }
         }
     });

@@ -1,6 +1,6 @@
 import {WebSocketServer, WebSocket} from 'ws';
 import * as common from './common.mjs'
-import {PlayerMoving, PlayerJoined, PlayerLeft, Player, Event, Direction} from './common.mjs'
+import {PlayerMoving, PlayerLeft, Player, Event, Direction} from './common.mjs'
 
 namespace Stats {
     const AVERAGE_CAPACITY = 30;
@@ -253,14 +253,17 @@ function tick() {
             // Reconstructing the state of the other players
             players.forEach((otherPlayer) => {
                 if (joinedId !== otherPlayer.id) { // Joined player should already know about themselves
-                    bytesSentCounter += common.sendMessage<PlayerJoined>(joinedPlayer.ws, {
-                        kind: 'PlayerJoined',
-                        id: otherPlayer.id,
-                        x: otherPlayer.x,
-                        y: otherPlayer.y,
-                        hue: otherPlayer.hue,
-                    })
+                    const view = new DataView(new ArrayBuffer(common.PlayerJoinedStruct.size))
+                    common.PlayerJoinedStruct.kind.write(view, 0, common.MessageKind.PlayerJoined);
+                    common.PlayerJoinedStruct.id.write(view, 0, otherPlayer.id);
+                    common.PlayerJoinedStruct.x.write(view, 0, otherPlayer.x);
+                    common.PlayerJoinedStruct.y.write(view, 0, otherPlayer.y);
+                    common.PlayerJoinedStruct.hue.write(view, 0, otherPlayer.hue/360*256);
+                    common.PlayerJoinedStruct.moving.write(view, 0, common.movingMask(otherPlayer.moving));
+                    joinedPlayer.ws.send(view);
+                    bytesSentCounter += view.byteLength;
                     messageSentCounter += 1
+
                     let direction: Direction;
                     for (direction in otherPlayer.moving) {
                         if (otherPlayer.moving[direction]) {
@@ -284,15 +287,17 @@ function tick() {
     joinedIds.forEach((joinedId) => {
         const joinedPlayer = players.get(joinedId);
         if (joinedPlayer !== undefined) { // This should never happen, but we handling none existing ids for more robustness
+            const view = new DataView(new ArrayBuffer(common.PlayerJoinedStruct.size))
+            common.PlayerJoinedStruct.kind.write(view, 0, common.MessageKind.PlayerJoined);
+            common.PlayerJoinedStruct.id.write(view, 0, joinedPlayer.id);
+            common.PlayerJoinedStruct.x.write(view, 0, joinedPlayer.x);
+            common.PlayerJoinedStruct.y.write(view, 0, joinedPlayer.y);
+            common.PlayerJoinedStruct.hue.write(view, 0, joinedPlayer.hue/360*256);
+            common.PlayerJoinedStruct.moving.write(view, 0, common.movingMask(joinedPlayer.moving));
             players.forEach((otherPlayer) => {
                 if (joinedId !== otherPlayer.id) { // Joined player should already know about themselves
-                    bytesSentCounter += common.sendMessage<PlayerJoined>(otherPlayer.ws, {
-                        kind: 'PlayerJoined',
-                        id: joinedPlayer.id,
-                        x: joinedPlayer.x,
-                        y: joinedPlayer.y,
-                        hue: joinedPlayer.hue,
-                    })
+                    otherPlayer.ws.send(view);
+                    bytesSentCounter += view.byteLength;
                     messageSentCounter += 1
                 }
             })

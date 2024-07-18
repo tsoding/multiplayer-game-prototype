@@ -13,6 +13,36 @@ type Moving = {
     [key in Direction]: boolean
 }
 
+// TODO: it's realy easy to forget to update this array if the definition of type Direction changes.
+const directions: Direction[] = ['left', 'right', 'up', 'down'];
+
+export function movingMask(moving: Moving): number {
+    let mask = 0;
+    for (let i = 0; i < directions.length; ++i) {
+        if (moving[directions[i]]) {
+            mask = mask|(1<<i);
+        }
+    }
+    return mask;
+}
+
+export function setMovingMask(moving: Moving, mask: number) {
+    for (let i = 0; i < directions.length; ++i) {
+        moving[directions[i]] = ((mask>>i)&1) !== 0;
+    }
+}
+
+export function movingFromMask(mask: number): Moving {
+    const moving: Moving = {
+        'left': false,
+        'right': false,
+        'up': false,
+        'down': false,
+    };
+    setMovingMask(moving, mask);
+    return moving;
+}
+
 export type Vector2 = {x: number, y: number};
 export const DIRECTION_VECTORS: {[key in Direction]: Vector2} = {
     'left':  {x: -1, y: 0},
@@ -110,7 +140,20 @@ export const HelloStruct = (() => {
     }
 })();
 
-export interface PlayerJoined {
+export const PlayerJoinedStruct = (() => {
+    const allocator = { iota: 0 };
+    return {
+        kind   : allocUint8Field(allocator),
+        id     : allocUint32Field(allocator),
+        x      : allocFloat32Field(allocator),
+        y      : allocFloat32Field(allocator),
+        hue    : allocUint8Field(allocator),
+        moving : allocUint8Field(allocator),
+        size : allocator.iota,
+    }
+})();
+
+export interface _PlayerJoined {
     kind: 'PlayerJoined',
     id: number,
     x: number,
@@ -118,7 +161,7 @@ export interface PlayerJoined {
     hue: number,
 }
 
-export function isPlayerJoined(arg: any): arg is PlayerJoined {
+export function isPlayerJoined(arg: any): arg is _PlayerJoined {
     return arg
         && arg.kind === 'PlayerJoined'
         && isNumber(arg.id)
@@ -170,7 +213,7 @@ export function isPlayerMoving(arg: any): arg is PlayerMoving {
         && isDirection(arg.direction);
 }
 
-export type Event = PlayerJoined | PlayerLeft | PlayerMoving;
+export type Event = _PlayerJoined | PlayerLeft | PlayerMoving;
 
 function properMod(a: number, b: number): number {
     return (a%b + b)%b;
