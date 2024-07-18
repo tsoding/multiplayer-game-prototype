@@ -71,15 +71,15 @@ const DIRECTION_KEYS: {[key: string]: Direction} = {
                         moving: common.movingFromMask(common.PlayerJoinedStruct.moving.read(view, 0)),
                         hue: common.PlayerJoinedStruct.hue.read(view, 0)/256*360,
                     })
+                } else if (common.PlayerLeftStruct.size === view.byteLength && common.PlayerLeftStruct.kind.read(view, 0) === common.MessageKind.PlayerLeft) {
+                    players.delete(common.PlayerLeftStruct.id.read(view, 0))
                 } else {
                     console.error("Received bogus-amogus message from server. Incorrect `PlayerJoined` message.", view)
                     ws?.close();
                 }
             } else {
                 const message = JSON.parse(event.data)
-                if (common.isPlayerLeft(message)) {
-                    players.delete(message.id)
-                } else if (common.isPlayerMoving(message)) {
+                if (common.isPlayerMoving(message)) {
                     const player = players.get(message.id);
                     if (player === undefined) {
                         console.error(`Received bogus-amogus message from server. We don't know anything about player with id ${message.id}`, message)

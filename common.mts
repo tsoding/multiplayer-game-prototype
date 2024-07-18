@@ -78,6 +78,7 @@ export function isBoolean(arg: any): arg is boolean {
 export enum MessageKind {
     Hello,
     PlayerJoined,
+    PlayerLeft,
 }
 
 interface Field {
@@ -170,12 +171,21 @@ export function isPlayerJoined(arg: any): arg is _PlayerJoined {
         && isNumber(arg.hue)
 }
 
-export interface PlayerLeft {
+export const PlayerLeftStruct = (() => {
+    const allocator = { iota: 0 };
+    return {
+        kind   : allocUint8Field(allocator),
+        id     : allocUint32Field(allocator),
+        size : allocator.iota,
+    }
+})();
+
+export interface PlayerLeft_ {
     kind: 'PlayerLeft',
     id: number,
 }
 
-export function isPlayerLeft(arg: any): arg is PlayerLeft {
+export function isPlayerLeft(arg: any): arg is PlayerLeft_ {
     return arg
         && arg.kind === 'PlayerLeft'
         && isNumber(arg.id)
@@ -213,7 +223,7 @@ export function isPlayerMoving(arg: any): arg is PlayerMoving {
         && isDirection(arg.direction);
 }
 
-export type Event = _PlayerJoined | PlayerLeft | PlayerMoving;
+export type Event = _PlayerJoined | PlayerLeft_ | PlayerMoving;
 
 function properMod(a: number, b: number): number {
     return (a%b + b)%b;

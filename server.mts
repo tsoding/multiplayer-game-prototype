@@ -1,6 +1,6 @@
 import {WebSocketServer, WebSocket} from 'ws';
 import * as common from './common.mjs'
-import {PlayerMoving, PlayerLeft, Player, Event, Direction} from './common.mjs'
+import {PlayerMoving, PlayerLeft_, Player, Event, Direction} from './common.mjs'
 
 namespace Stats {
     const AVERAGE_CAPACITY = 30;
@@ -291,11 +291,12 @@ function tick() {
 
     // Notifying about who left
     leftIds.forEach((leftId) => {
+        const view = new DataView(new ArrayBuffer(common.PlayerLeftStruct.size))
+        common.PlayerJoinedStruct.kind.write(view, 0, common.MessageKind.PlayerLeft);
+        common.PlayerJoinedStruct.id.write(view, 0, leftId);
         players.forEach((player) => {
-            bytesSentCounter += common.sendMessage<PlayerLeft>(player.ws, {
-                kind: 'PlayerLeft',
-                id: leftId,
-            });
+            player.ws.send(view);
+            bytesSentCounter += view.byteLength;
             messageSentCounter += 1
         })
     })
