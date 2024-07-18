@@ -263,21 +263,6 @@ function tick() {
                     joinedPlayer.ws.send(view);
                     bytesSentCounter += view.byteLength;
                     messageSentCounter += 1
-
-                    let direction: Direction;
-                    for (direction in otherPlayer.moving) {
-                        if (otherPlayer.moving[direction]) {
-                            bytesSentCounter += common.sendMessage<PlayerMoving>(joinedPlayer.ws, {
-                                kind: 'PlayerMoving',
-                                id: otherPlayer.id,
-                                x: otherPlayer.x,
-                                y: otherPlayer.y,
-                                start: true,
-                                direction
-                            })
-                            messageSentCounter += 1
-                        }
-                    }
                 }
             })
         }
