@@ -79,6 +79,7 @@ export enum MessageKind {
     Hello,
     PlayerJoined,
     PlayerLeft,
+    PlayerMoving,
 }
 
 interface Field {
@@ -154,23 +155,6 @@ export const PlayerJoinedStruct = (() => {
     }
 })();
 
-export interface _PlayerJoined {
-    kind: 'PlayerJoined',
-    id: number,
-    x: number,
-    y: number,
-    hue: number,
-}
-
-export function isPlayerJoined(arg: any): arg is _PlayerJoined {
-    return arg
-        && arg.kind === 'PlayerJoined'
-        && isNumber(arg.id)
-        && isNumber(arg.x)
-        && isNumber(arg.y)
-        && isNumber(arg.hue)
-}
-
 export const PlayerLeftStruct = (() => {
     const allocator = { iota: 0 };
     return {
@@ -179,17 +163,6 @@ export const PlayerLeftStruct = (() => {
         size : allocator.iota,
     }
 })();
-
-export interface PlayerLeft_ {
-    kind: 'PlayerLeft',
-    id: number,
-}
-
-export function isPlayerLeft(arg: any): arg is PlayerLeft_ {
-    return arg
-        && arg.kind === 'PlayerLeft'
-        && isNumber(arg.id)
-}
 
 export interface AmmaMoving {
     kind: 'AmmaMoving',
@@ -204,7 +177,19 @@ export function isAmmaMoving(arg: any): arg is AmmaMoving {
         && isDirection(arg.direction);
 }
 
-export interface PlayerMoving {
+export const PlayerMovingStruct = (() => {
+    const allocator = { iota: 0 };
+    return {
+        kind   : allocUint8Field(allocator),
+        id     : allocUint32Field(allocator),
+        x      : allocFloat32Field(allocator),
+        y      : allocFloat32Field(allocator),
+        moving : allocUint8Field(allocator),
+        size : allocator.iota,
+    }
+})();
+
+export interface PlayerMoving_ {
     kind: 'PlayerMoving',
     id: number,
     x: number,
@@ -213,7 +198,7 @@ export interface PlayerMoving {
     direction: Direction,
 }
 
-export function isPlayerMoving(arg: any): arg is PlayerMoving {
+export function isPlayerMoving(arg: any): arg is PlayerMoving_ {
     return arg
         && arg.kind === 'PlayerMoving'
         && isNumber(arg.id)
@@ -223,7 +208,7 @@ export function isPlayerMoving(arg: any): arg is PlayerMoving {
         && isDirection(arg.direction);
 }
 
-export type Event = _PlayerJoined | PlayerLeft_ | PlayerMoving;
+export type Event = PlayerMoving_;
 
 function properMod(a: number, b: number): number {
     return (a%b + b)%b;

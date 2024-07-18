@@ -35,64 +35,55 @@ const DIRECTION_KEYS: {[key: string]: Direction} = {
     ws.addEventListener("message", (event) => {
         // console.log('Received message', event);
         if (me === undefined) {
-            if (event.data instanceof ArrayBuffer) {
-                const view = new DataView(event.data);
-                if (common.HelloStruct.size === view.byteLength && common.HelloStruct.kind.read(view, 0) === common.MessageKind.Hello) {
-                    me = {
-                        id: common.HelloStruct.id.read(view, 0),
-                        x: common.HelloStruct.x.read(view, 0),
-                        y: common.HelloStruct.y.read(view, 0),
-                        moving: {
-                            'left': false,
-                            'right': false,
-                            'up': false,
-                            'down': false,
-                        },
-                        hue: common.HelloStruct.hue.read(view, 0)/256*360,
-                    }
-                    players.set(me.id, me)
-                } else {
-                    console.error("Received bogus-amogus message from server. Incorrect `Hello` message.", view)
-                    ws?.close();
+            const view = new DataView(event.data);
+            if (common.HelloStruct.size === view.byteLength && common.HelloStruct.kind.read(view, 0) === common.MessageKind.Hello) {
+                me = {
+                    id: common.HelloStruct.id.read(view, 0),
+                    x: common.HelloStruct.x.read(view, 0),
+                    y: common.HelloStruct.y.read(view, 0),
+                    moving: {
+                        'left': false,
+                        'right': false,
+                        'up': false,
+                        'down': false,
+                    },
+                    hue: common.HelloStruct.hue.read(view, 0)/256*360,
                 }
+                players.set(me.id, me)
             } else {
-                console.error("Received bogus-amogus message from server. Expected binary data.", event)
+                console.error("Received bogus-amogus message from server. Incorrect `Hello` message.", view)
                 ws?.close();
             }
         } else {
-            if (event.data instanceof ArrayBuffer) {
-                const view = new DataView(event.data)
-                if (common.PlayerJoinedStruct.size === view.byteLength && common.PlayerJoinedStruct.kind.read(view, 0) === common.MessageKind.PlayerJoined) {
-                    const id = common.PlayerJoinedStruct.id.read(view, 0);
-                    players.set(id, {
-                        id,
-                        x: common.PlayerJoinedStruct.x.read(view, 0),
-                        y: common.PlayerJoinedStruct.y.read(view, 0),
-                        moving: common.movingFromMask(common.PlayerJoinedStruct.moving.read(view, 0)),
-                        hue: common.PlayerJoinedStruct.hue.read(view, 0)/256*360,
-                    })
-                } else if (common.PlayerLeftStruct.size === view.byteLength && common.PlayerLeftStruct.kind.read(view, 0) === common.MessageKind.PlayerLeft) {
-                    players.delete(common.PlayerLeftStruct.id.read(view, 0))
-                } else {
-                    console.error("Received bogus-amogus message from server. Incorrect `PlayerJoined` message.", view)
+            const view = new DataView(event.data)
+            if (common.PlayerJoinedStruct.size === view.byteLength && common.PlayerJoinedStruct.kind.read(view, 0) === common.MessageKind.PlayerJoined) {
+                const id = common.PlayerJoinedStruct.id.read(view, 0);
+                players.set(id, {
+                    id,
+                    x: common.PlayerJoinedStruct.x.read(view, 0),
+                    y: common.PlayerJoinedStruct.y.read(view, 0),
+                    moving: common.movingFromMask(common.PlayerJoinedStruct.moving.read(view, 0)),
+                    hue: common.PlayerJoinedStruct.hue.read(view, 0)/256*360,
+                })
+            } else if (common.PlayerLeftStruct.size === view.byteLength && common.PlayerLeftStruct.kind.read(view, 0) === common.MessageKind.PlayerLeft) {
+                players.delete(common.PlayerLeftStruct.id.read(view, 0))
+            } else if (common.PlayerMovingStruct.size === view.byteLength && common.PlayerMovingStruct.kind.read(view, 0) === common.MessageKind.PlayerMoving) {
+                const id = common.PlayerMovingStruct.id.read(view, 0);
+                const player = players.get(id);
+                if (player === undefined) {
+                    console.error(`Received bogus-amogus message from server. We don't know anything about player with id ${id}`)
                     ws?.close();
+                    return;
                 }
+                const moving = common.PlayerMovingStruct.moving.read(view, 0);
+                const x = common.PlayerMovingStruct.x.read(view, 0);
+                const y = common.PlayerMovingStruct.y.read(view, 0);
+                common.setMovingMask(player.moving, moving);
+                player.x = x;
+                player.y = y;
             } else {
-                const message = JSON.parse(event.data)
-                if (common.isPlayerMoving(message)) {
-                    const player = players.get(message.id);
-                    if (player === undefined) {
-                        console.error(`Received bogus-amogus message from server. We don't know anything about player with id ${message.id}`, message)
-                        ws?.close();
-                        return;
-                    }
-                    player.moving[message.direction] = message.start;
-                    player.x = message.x;
-                    player.y = message.y;
-                } else {
-                    console.error("Received bogus-amogus message from server", message)
-                    ws?.close();
-                }
+                console.error("Received bogus-amogus message from server.", view)
+                ws?.close();
             }
         }
     });
