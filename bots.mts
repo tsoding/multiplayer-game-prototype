@@ -52,12 +52,14 @@ function createBot(): Bot {
                 bot.ws.close();
             }
         } else {
-            const message = JSON.parse(event.data.toString())
-            if (common.isPlayerMoving(message)) {
-                if (message.id == bot.me.id) {
-                    bot.me.x = message.x;
-                    bot.me.y = message.y;
-                    bot.me.moving[message.direction] = message.start;
+            if (typeof(event.data) === 'string') {
+                const message = JSON.parse(event.data.toString())
+                if (common.isPlayerMoving(message)) {
+                    if (message.id == bot.me.id) {
+                        bot.me.x = message.x;
+                        bot.me.y = message.y;
+                        bot.me.moving[message.direction] = message.start;
+                    }
                 }
             }
         }
