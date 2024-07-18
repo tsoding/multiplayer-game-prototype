@@ -45,19 +45,70 @@ export function isBoolean(arg: any): arg is boolean {
     return typeof(arg) === 'boolean';
 }
 
-export interface Hello {
-    kind: "Hello",
-    id: number,
-    x: number,
-    y: number,
-    hue: number,
+export enum MessageKind {
+    Hello,
+    PlayerJoined,
 }
 
-export function isHello(arg: any): arg is Hello {
-    return arg
-        && arg.kind === 'Hello'
-        && isNumber(arg.id);
+interface Field {
+    offset: number,
+    size: number,
+    read(view: DataView, baseOffset: number): number;
+    write(view: DataView, baseOffset: number, value: number): void;
 }
+
+const UINT8_SIZE = 1;
+const UINT32_SIZE = 4;
+const FLOAT32_SIZE = 4;
+
+function allocUint8Field(allocator: { iota: number }): Field {
+    const offset = allocator.iota;
+    const size = UINT8_SIZE;
+    allocator.iota += size;
+    return {
+        offset,
+        size,
+        read: (view, baseOffset) => view.getUint8(baseOffset + offset),
+        write: (view, baseOffset, value) => view.setUint8(baseOffset + offset, value)
+    }
+}
+
+function allocUint32Field(allocator: { iota: number }): Field {
+    const offset = allocator.iota;
+    const size = UINT32_SIZE;
+    allocator.iota += size;
+    return {
+        offset,
+        size,
+        read: (view, baseOffset) => view.getUint32(baseOffset + offset, true),
+        write: (view, baseOffset, value) => view.setUint32(baseOffset + offset, value, true)
+    }
+}
+
+function allocFloat32Field(allocator: { iota: number }): Field {
+    const offset = allocator.iota;
+    const size = FLOAT32_SIZE;
+    allocator.iota += size;
+    return {
+        offset,
+        size,
+        read: (view, baseOffset) => view.getFloat32(baseOffset + offset, true),
+        write: (view, baseOffset, value) => view.setFloat32(baseOffset + offset, value, true)
+    }
+}
+
+// [kind: Uint8] [id: Uint32] [x: Float32] [y: Float32] [hue: Uint8]
+export const HelloStruct = (() => {
+    const allocator = { iota: 0 };
+    return {
+        kind : allocUint8Field(allocator),
+        id   : allocUint32Field(allocator),
+        x    : allocFloat32Field(allocator),
+        y    : allocFloat32Field(allocator),
+        hue  : allocUint8Field(allocator),
+        size : allocator.iota,
+    }
+})();
 
 export interface PlayerJoined {
     kind: 'PlayerJoined',

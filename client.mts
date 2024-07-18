@@ -23,6 +23,7 @@ const DIRECTION_KEYS: {[key: string]: Direction} = {
     let ws: WebSocket | undefined = new WebSocket(`ws://${window.location.hostname}:${common.SERVER_PORT}`);
     let me: Player | undefined = undefined;
     const players = new Map<number, Player>();
+    ws.binaryType = 'arraybuffer';
     ws.addEventListener("close", (event) => {
         console.log("WEBSOCKET CLOSE", event)
         ws = undefined
@@ -32,30 +33,34 @@ const DIRECTION_KEYS: {[key: string]: Direction} = {
         console.log("WEBSOCKET ERROR", event)
     });
     ws.addEventListener("message", (event) => {
+        // console.log('Received message', event);
         if (me === undefined) {
-            const message = JSON.parse(event.data)
-            if (common.isHello(message)) {
-                me = {
-                    id: message.id,
-                    x: message.x,
-                    y: message.y,
-                    moving: {
-                        'left': false,
-                        'right': false,
-                        'up': false,
-                        'down': false,
-                    },
-                    hue: message.hue,
-                };
-                players.set(message.id, me)
-                // console.log(`Connected as player ${me.id}`);
+            if (event.data instanceof ArrayBuffer) {
+                const view = new DataView(event.data);
+                if (common.HelloStruct.size === view.byteLength && common.HelloStruct.kind.read(view, 0) === common.MessageKind.Hello) {
+                    me = {
+                        id: common.HelloStruct.id.read(view, 0),
+                        x: common.HelloStruct.x.read(view, 0),
+                        y: common.HelloStruct.y.read(view, 0),
+                        moving: {
+                            'left': false,
+                            'right': false,
+                            'up': false,
+                            'down': false,
+                        },
+                        hue: common.HelloStruct.hue.read(view, 0)/256*360,
+                    }
+                    players.set(me.id, me)
+                } else {
+                    console.error("Received bogus-amogus message from server. Incorrect `Hello` message.", view)
+                    ws?.close();
+                }
             } else {
-                console.log("Received bogus-amogus message from server", message)
+                console.error("Received bogus-amogus message from server. Expected binary data.", event)
                 ws?.close();
             }
         } else {
             const message = JSON.parse(event.data)
-            // console.log('Received message', message);
             if (common.isPlayerJoined(message)) {
                 players.set(message.id, {
                     id: message.id,
@@ -74,7 +79,7 @@ const DIRECTION_KEYS: {[key: string]: Direction} = {
             } else if (common.isPlayerMoving(message)) {
                 const player = players.get(message.id);
                 if (player === undefined) {
-                    console.log(`Received bogus-amogus message from server. We don't know anything about player with id ${message.id}`, message)
+                    console.error(`Received bogus-amogus message from server. We don't know anything about player with id ${message.id}`, message)
                     ws?.close();
                     return;
                 }
@@ -82,7 +87,7 @@ const DIRECTION_KEYS: {[key: string]: Direction} = {
                 player.x = message.x;
                 player.y = message.y;
             } else {
-                console.log("Received bogus-amogus message from server", message)
+                console.error("Received bogus-amogus message from server", message)
                 ws?.close();
             }
         }

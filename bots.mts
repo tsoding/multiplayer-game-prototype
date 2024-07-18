@@ -21,27 +21,34 @@ function createBot(): Bot {
         timeoutBeforeTurn: undefined,
     };
 
+    bot.ws.binaryType = 'arraybuffer';
+
     bot.ws.addEventListener("message", (event) => {
         if (bot.me === undefined) {
-            const message = JSON.parse(event.data.toString())
-            if (common.isHello(message)) {
-                bot.me = {
-                    id: message.id,
-                    x: message.x,
-                    y: message.y,
-                    moving: {
-                        'left': false,
-                        'right': false,
-                        'up': false,
-                        'down': false,
-                    },
-                    hue: message.hue,
-                };
-                turn();
-                setTimeout(tick, 1000/BOT_FPS);
-                console.log(`Connected as player ${bot.me.id}`);
+            if (event.data instanceof ArrayBuffer) {
+                const view = new DataView(event.data);
+                if (common.HelloStruct.size === view.byteLength && common.HelloStruct.kind.read(view, 0) === common.MessageKind.Hello) {
+                    bot.me = {
+                        id: common.HelloStruct.id.read(view, 0),
+                        x: common.HelloStruct.x.read(view, 0),
+                        y: common.HelloStruct.y.read(view, 0),
+                        moving: {
+                            'left': false,
+                            'right': false,
+                            'up': false,
+                            'down': false,
+                        },
+                        hue: common.HelloStruct.hue.read(view, 0)/256*360,
+                    }
+                    turn();
+                    setTimeout(tick, 1000/BOT_FPS);
+                    console.log(`Connected as player ${bot.me.id}`);
+                } else {
+                    console.error("Received bogus-amogus message from server. Incorrect `Hello` message.", view)
+                    bot.ws.close();
+                }
             } else {
-                console.log("Received bogus-amogus message from server", message)
+                console.error("Received bogus-amogus message from server. Expected binary data.", event)
                 bot.ws.close();
             }
         } else {

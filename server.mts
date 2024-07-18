@@ -1,6 +1,6 @@
 import {WebSocketServer, WebSocket} from 'ws';
 import * as common from './common.mjs'
-import {PlayerMoving, PlayerJoined, PlayerLeft, Player, Event, Hello, Direction} from './common.mjs'
+import {PlayerMoving, PlayerJoined, PlayerLeft, Player, Event, Direction} from './common.mjs'
 
 namespace Stats {
     const AVERAGE_CAPACITY = 30;
@@ -240,14 +240,16 @@ function tick() {
         const joinedPlayer = players.get(joinedId);
         if (joinedPlayer !== undefined) { // This should never happen, but we handling none existing ids for more robustness
             // The greetings
-            bytesSentCounter += common.sendMessage<Hello>(joinedPlayer.ws, {
-                kind: 'Hello',
-                id: joinedPlayer.id,
-                x: joinedPlayer.x,
-                y: joinedPlayer.y,
-                hue: joinedPlayer.hue,
-            })
+            const view = new DataView(new ArrayBuffer(common.HelloStruct.size));
+            common.HelloStruct.kind.write(view, 0, common.MessageKind.Hello);
+            common.HelloStruct.id.write(view, 0, joinedPlayer.id);
+            common.HelloStruct.x.write(view, 0, joinedPlayer.x);
+            common.HelloStruct.y.write(view, 0, joinedPlayer.y);
+            common.HelloStruct.hue.write(view, 0, Math.floor(joinedPlayer.hue/360*256));
+            joinedPlayer.ws.send(view);
+            bytesSentCounter += view.byteLength;
             messageSentCounter += 1
+
             // Reconstructing the state of the other players
             players.forEach((otherPlayer) => {
                 if (joinedId !== otherPlayer.id) { // Joined player should already know about themselves
