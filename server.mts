@@ -275,7 +275,7 @@ function tick() {
 
     players.forEach((player) => {
         if (player.newMoving !== player.moving) {
-            player.newMoving = player.moving;
+            player.moving = player.newMoving;
 
             const view = new DataView(new ArrayBuffer(common.PlayerMovingStruct.size));
             common.PlayerMovingStruct.kind.write(view, 0, common.MessageKind.PlayerMoving);
