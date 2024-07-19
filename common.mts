@@ -1,5 +1,3 @@
-import type * as ws from 'ws';
-
 export const SERVER_PORT = 6970;
 export const WORLD_FACTOR = 200;
 export const WORLD_WIDTH = 4*WORLD_FACTOR;
@@ -7,44 +5,30 @@ export const WORLD_HEIGHT = 3*WORLD_FACTOR;
 export const PLAYER_SIZE = 30;
 export const PLAYER_SPEED = 500;
 
-export type Direction = 'left' | 'right' | 'up' | 'down';
-
-type Moving = {
-    [key in Direction]: boolean
-}
-
-// TODO: it's realy easy to forget to update this array if the definition of type Direction changes.
-const directions: Direction[] = ['left', 'right', 'up', 'down'];
-
-export function movingMask(moving: Moving): number {
-    let mask = 0;
-    for (let i = 0; i < directions.length; ++i) {
-        if (moving[directions[i]]) {
-            mask = mask|(1<<i);
-        }
-    }
-    return mask;
-}
-
-export function setMovingMask(moving: Moving, mask: number) {
-    for (let i = 0; i < directions.length; ++i) {
-        moving[directions[i]] = ((mask>>i)&1) !== 0;
-    }
+export enum Direction {
+    Left = 0,
+    Right,
+    Up,
+    Down,
+    Count,
 }
 
 export type Vector2 = {x: number, y: number};
-export const DIRECTION_VECTORS: {[key in Direction]: Vector2} = {
-    'left':  {x: -1, y: 0},
-    'right': {x: 1, y: 0},
-    'up':    {x: 0, y: -1},
-    'down':  {x: 0, y: 1},
-};
+export const DIRECTION_VECTORS: Vector2[] = (() => {
+    console.assert(Direction.Count == 4, "The definition of Direction have changed");
+    const vectors = Array(Direction.Count);
+    vectors[Direction.Left]  = {x: -1, y: 0};
+    vectors[Direction.Right] = {x: 1, y: 0};
+    vectors[Direction.Up]    = {x: 0, y: -1};
+    vectors[Direction.Down]  = {x: 0, y: 1};
+    return vectors;
+})()
 
 export interface Player {
     id: number,
     x: number,
     y: number,
-    moving: Moving,
+    moving: number,
     hue: number,
 }
 
@@ -169,11 +153,10 @@ function properMod(a: number, b: number): number {
 }
 
 export function updatePlayer(player: Player, deltaTime: number) {
-    let dir: Direction;
     let dx = 0;
     let dy = 0;
-    for (dir in DIRECTION_VECTORS) {
-        if (player.moving[dir]) {
+    for (let dir = 0; dir < Direction.Count; dir += 1) {
+        if ((player.moving>>dir)&1) {
             dx += DIRECTION_VECTORS[dir].x;
             dy += DIRECTION_VECTORS[dir].y;
         }

@@ -1,15 +1,15 @@
 import * as common from './common.mjs'
-import type {Player, Direction} from './common.mjs';
+import type {Player} from './common.mjs';
 
-const DIRECTION_KEYS: {[key: string]: Direction} = {
-    'ArrowLeft'  : 'left',
-    'ArrowRight' : 'right',
-    'ArrowUp'    : 'up',
-    'ArrowDown'  : 'down',
-    'KeyA'       : 'left',
-    'KeyD'       : 'right',
-    'KeyS'       : 'down',
-    'KeyW'       : 'up',
+const DIRECTION_KEYS: {[key: string]: common.Direction} = {
+    'ArrowLeft'  : common.Direction.Left,
+    'ArrowRight' : common.Direction.Right,
+    'ArrowUp'    : common.Direction.Up,
+    'ArrowDown'  : common.Direction.Down,
+    'KeyA'       : common.Direction.Left,
+    'KeyD'       : common.Direction.Right,
+    'KeyS'       : common.Direction.Down,
+    'KeyW'       : common.Direction.Up,
 };
 
 (async () => {
@@ -45,12 +45,7 @@ const DIRECTION_KEYS: {[key: string]: Direction} = {
                     id: common.HelloStruct.id.read(view, 0),
                     x: common.HelloStruct.x.read(view, 0),
                     y: common.HelloStruct.y.read(view, 0),
-                    moving: {
-                        'left': false,
-                        'right': false,
-                        'up': false,
-                        'down': false,
-                    },
+                    moving: 0,
                     hue: common.HelloStruct.hue.read(view, 0)/256*360,
                 }
                 players.set(me.id, me)
@@ -65,15 +60,9 @@ const DIRECTION_KEYS: {[key: string]: Direction} = {
                     id,
                     x: common.PlayerJoinedStruct.x.read(view, 0),
                     y: common.PlayerJoinedStruct.y.read(view, 0),
-                    moving: {
-                        'left': false,
-                        'right': false,
-                        'up': false,
-                        'down': false,
-                    },
+                    moving: common.PlayerJoinedStruct.moving.read(view, 0),
                     hue: common.PlayerJoinedStruct.hue.read(view, 0)/256*360,
                 }
-                common.setMovingMask(player.moving, common.PlayerJoinedStruct.moving.read(view, 0))
                 players.set(id, player);
             } else if (common.PlayerLeftStruct.verifyAt(view, 0)) {
                 players.delete(common.PlayerLeftStruct.id.read(view, 0))
@@ -85,12 +74,9 @@ const DIRECTION_KEYS: {[key: string]: Direction} = {
                     ws?.close();
                     return;
                 }
-                const moving = common.PlayerMovingStruct.moving.read(view, 0);
-                const x = common.PlayerMovingStruct.x.read(view, 0);
-                const y = common.PlayerMovingStruct.y.read(view, 0);
-                common.setMovingMask(player.moving, moving);
-                player.x = x;
-                player.y = y;
+                player.moving = common.PlayerMovingStruct.moving.read(view, 0);
+                player.x = common.PlayerMovingStruct.x.read(view, 0);
+                player.y = common.PlayerMovingStruct.y.read(view, 0);
             } else {
                 console.error("Received bogus-amogus message from server.", view)
                 ws?.close();
@@ -148,10 +134,10 @@ const DIRECTION_KEYS: {[key: string]: Direction} = {
             if (!e.repeat) {
                 const direction = DIRECTION_KEYS[e.code];
                 if (direction !== undefined) {
-                    me.moving[direction] = true;
+                    me.moving |= (1<<direction);
                     const view = new DataView(new ArrayBuffer(common.AmmaMovingStruct.size));
                     common.AmmaMovingStruct.kind.write(view, 0, common.MessageKind.AmmaMoving);
-                    common.AmmaMovingStruct.moving.write(view, 0, common.movingMask(me.moving));
+                    common.AmmaMovingStruct.moving.write(view, 0, me.moving);
                     ws.send(view);
                 }
             }
@@ -162,10 +148,10 @@ const DIRECTION_KEYS: {[key: string]: Direction} = {
             if (!e.repeat) {
                 const direction = DIRECTION_KEYS[e.code];
                 if (direction !== undefined) {
-                    me.moving[direction] = false;
+                    me.moving &= ~(1<<direction);
                     const view = new DataView(new ArrayBuffer(common.AmmaMovingStruct.size));
                     common.AmmaMovingStruct.kind.write(view, 0, common.MessageKind.AmmaMoving);
-                    common.AmmaMovingStruct.moving.write(view, 0, common.movingMask(me.moving));
+                    common.AmmaMovingStruct.moving.write(view, 0, me.moving);
                     ws.send(view);
                 }
             }

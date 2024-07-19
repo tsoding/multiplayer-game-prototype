@@ -1,6 +1,6 @@
-import {WebSocket} from 'ws';
+import {WebSocket} from 'ws'
 import * as common from './common.mjs';
-import type {Player, Direction} from './common.mjs'
+import type {Player} from './common.mjs'
 
 const BOT_FPS = 60;
 
@@ -34,12 +34,7 @@ function createBot(): Bot {
                     id: common.HelloStruct.id.read(view, 0),
                     x: common.HelloStruct.x.read(view, 0),
                     y: common.HelloStruct.y.read(view, 0),
-                    moving: {
-                        'left': false,
-                        'right': false,
-                        'up': false,
-                        'down': false,
-                    },
+                    moving: 0,
                     hue: common.HelloStruct.hue.read(view, 0)/256*360,
                 }
                 turn();
@@ -53,12 +48,9 @@ function createBot(): Bot {
             if (common.PlayerMovingStruct.verifyAt(view, 0)) {
                 const id = common.PlayerMovingStruct.id.read(view, 0);
                 if (id === bot.me.id) {
-                    const moving = common.PlayerMovingStruct.moving.read(view, 0);
-                    const x = common.PlayerMovingStruct.x.read(view, 0);
-                    const y = common.PlayerMovingStruct.y.read(view, 0);
-                    common.setMovingMask(bot.me.moving, moving);
-                    bot.me.x = x;
-                    bot.me.y = y;
+                    bot.me.moving = common.PlayerMovingStruct.moving.read(view, 0);
+                    bot.me.x = common.PlayerMovingStruct.x.read(view, 0);
+                    bot.me.y = common.PlayerMovingStruct.y.read(view, 0);
                 }
             }
         }
@@ -67,25 +59,17 @@ function createBot(): Bot {
     function turn() {
         if (bot.me !== undefined) {
             // Full stop
-            let direction: Direction;
-            for (direction in bot.me.moving) {
-                if (bot.me.moving[direction]) {
-                    bot.me.moving[direction] = false;
-                    const view = new DataView(new ArrayBuffer(common.AmmaMovingStruct.size));
-                    common.AmmaMovingStruct.kind.write(view, 0, common.MessageKind.AmmaMoving);
-                    common.AmmaMovingStruct.moving.write(view, 0, common.movingMask(bot.me.moving));
-                    bot.ws.send(view);
-                }
-            }
+            bot.me.moving = 0;
 
             // New direction
-            const directions = Object.keys(bot.me.moving) as Direction[];
-            direction = directions[Math.floor(Math.random()*directions.length)];
+            const direction = Math.floor(Math.random()*common.Direction.Count);
             bot.timeoutBeforeTurn = Math.random()*common.WORLD_WIDTH*0.5/common.PLAYER_SPEED;
-            bot.me.moving[direction] = true;
+            bot.me.moving |= 1<<direction;
+
+            // Sync
             const view = new DataView(new ArrayBuffer(common.AmmaMovingStruct.size));
             common.AmmaMovingStruct.kind.write(view, 0, common.MessageKind.AmmaMoving);
-            common.AmmaMovingStruct.moving.write(view, 0, common.movingMask(bot.me.moving));
+            common.AmmaMovingStruct.moving.write(view, 0, bot.me.moving);
             bot.ws.send(view);
         }
     }

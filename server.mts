@@ -154,12 +154,7 @@ wss.on("connection", (ws) => {
         id,
         x,
         y,
-        moving: {
-            'left': false,
-            'right': false,
-            'up': false,
-            'down': false,
-        },
+        moving: 0,
         hue,
         moved: false,
     }
@@ -184,7 +179,7 @@ wss.on("connection", (ws) => {
         bytesReceivedWithinTick += view.byteLength;
         if (common.AmmaMovingStruct.verifyAt(view, 0)) {
             // console.log(`Received message from player ${id}`, message)
-            common.setMovingMask(player.moving, common.AmmaMovingStruct.moving.read(view, 0));
+            player.moving = common.AmmaMovingStruct.moving.read(view, 0);
             player.moved = true;
         } else {
             // console.log(`Received bogus-amogus message from client ${id}:`, message)
@@ -236,7 +231,7 @@ function tick() {
                     common.PlayerJoinedStruct.x.write(view, 0, otherPlayer.x);
                     common.PlayerJoinedStruct.y.write(view, 0, otherPlayer.y);
                     common.PlayerJoinedStruct.hue.write(view, 0, otherPlayer.hue/360*256);
-                    common.PlayerJoinedStruct.moving.write(view, 0, common.movingMask(otherPlayer.moving));
+                    common.PlayerJoinedStruct.moving.write(view, 0, otherPlayer.moving);
                     joinedPlayer.ws.send(view);
                     bytesSentCounter += view.byteLength;
                     messageSentCounter += 1
@@ -255,7 +250,7 @@ function tick() {
             common.PlayerJoinedStruct.x.write(view, 0, joinedPlayer.x);
             common.PlayerJoinedStruct.y.write(view, 0, joinedPlayer.y);
             common.PlayerJoinedStruct.hue.write(view, 0, joinedPlayer.hue/360*256);
-            common.PlayerJoinedStruct.moving.write(view, 0, common.movingMask(joinedPlayer.moving));
+            common.PlayerJoinedStruct.moving.write(view, 0, joinedPlayer.moving);
             players.forEach((otherPlayer) => {
                 if (joinedId !== otherPlayer.id) { // Joined player should already know about themselves
                     otherPlayer.ws.send(view);
@@ -285,7 +280,7 @@ function tick() {
             common.PlayerMovingStruct.id.write(view, 0, player.id);
             common.PlayerMovingStruct.x.write(view, 0, player.x);
             common.PlayerMovingStruct.y.write(view, 0, player.y);
-            common.PlayerMovingStruct.moving.write(view, 0, common.movingMask(player.moving));
+            common.PlayerMovingStruct.moving.write(view, 0, player.moving);
 
             players.forEach((otherPlayer) => {
                 otherPlayer.ws.send(view);
