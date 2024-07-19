@@ -32,17 +32,6 @@ export function setMovingMask(moving: Moving, mask: number) {
     }
 }
 
-export function movingFromMask(mask: number): Moving {
-    const moving: Moving = {
-        'left': false,
-        'right': false,
-        'up': false,
-        'down': false,
-    };
-    setMovingMask(moving, mask);
-    return moving;
-}
-
 export type Vector2 = {x: number, y: number};
 export const DIRECTION_VECTORS: {[key in Direction]: Vector2} = {
     'left':  {x: -1, y: 0},
@@ -51,28 +40,12 @@ export const DIRECTION_VECTORS: {[key in Direction]: Vector2} = {
     'down':  {x: 0, y: 1},
 };
 
-function isDirection(arg: any): arg is Direction {
-    return DIRECTION_VECTORS[arg as Direction] !== undefined;
-}
-
 export interface Player {
     id: number,
     x: number,
     y: number,
     moving: Moving,
     hue: number,
-}
-
-export function isNumber(arg: any): arg is number {
-    return typeof(arg) === 'number';
-}
-
-export function isString(arg: any): arg is string {
-    return typeof(arg) === 'string';
-}
-
-export function isBoolean(arg: any): arg is boolean {
-    return typeof(arg) === 'boolean';
 }
 
 export enum MessageKind {
@@ -130,7 +103,6 @@ function allocFloat32Field(allocator: { iota: number }): Field {
     }
 }
 
-// [kind: Uint8] [id: Uint32] [x: Float32] [y: Float32] [hue: Uint8]
 export const HelloStruct = (() => {
     const allocator = { iota: 0 };
     return {
@@ -186,27 +158,6 @@ export const PlayerMovingStruct = (() => {
     }
 })();
 
-export interface PlayerMoving_ {
-    kind: 'PlayerMoving',
-    id: number,
-    x: number,
-    y: number,
-    start: boolean,
-    direction: Direction,
-}
-
-export function isPlayerMoving(arg: any): arg is PlayerMoving_ {
-    return arg
-        && arg.kind === 'PlayerMoving'
-        && isNumber(arg.id)
-        && isNumber(arg.x)
-        && isNumber(arg.y)
-        && isBoolean(arg.start)
-        && isDirection(arg.direction);
-}
-
-export type Event = PlayerMoving_;
-
 function properMod(a: number, b: number): number {
     return (a%b + b)%b;
 }
@@ -228,14 +179,4 @@ export function updatePlayer(player: Player, deltaTime: number) {
     }
     player.x = properMod(player.x + dx*PLAYER_SPEED*deltaTime, WORLD_WIDTH);
     player.y = properMod(player.y + dy*PLAYER_SPEED*deltaTime, WORLD_HEIGHT);
-}
-
-interface Message {
-    kind: string,
-}
-
-export function sendMessage<T extends Message>(socket: ws.WebSocket | WebSocket, message: T): number {
-    const text = JSON.stringify(message);
-    socket.send(text);
-    return text.length;
 }

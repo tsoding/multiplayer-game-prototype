@@ -58,13 +58,20 @@ const DIRECTION_KEYS: {[key: string]: Direction} = {
             const view = new DataView(event.data)
             if (common.PlayerJoinedStruct.size === view.byteLength && common.PlayerJoinedStruct.kind.read(view, 0) === common.MessageKind.PlayerJoined) {
                 const id = common.PlayerJoinedStruct.id.read(view, 0);
-                players.set(id, {
+                const player = {
                     id,
                     x: common.PlayerJoinedStruct.x.read(view, 0),
                     y: common.PlayerJoinedStruct.y.read(view, 0),
-                    moving: common.movingFromMask(common.PlayerJoinedStruct.moving.read(view, 0)),
+                    moving: {
+                        'left': false,
+                        'right': false,
+                        'up': false,
+                        'down': false,
+                    },
                     hue: common.PlayerJoinedStruct.hue.read(view, 0)/256*360,
-                })
+                }
+                common.setMovingMask(player.moving, common.PlayerJoinedStruct.moving.read(view, 0))
+                players.set(id, player);
             } else if (common.PlayerLeftStruct.size === view.byteLength && common.PlayerLeftStruct.kind.read(view, 0) === common.MessageKind.PlayerLeft) {
                 players.delete(common.PlayerLeftStruct.id.read(view, 0))
             } else if (common.PlayerMovingStruct.size === view.byteLength && common.PlayerMovingStruct.kind.read(view, 0) === common.MessageKind.PlayerMoving) {
