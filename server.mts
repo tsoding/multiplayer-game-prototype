@@ -170,26 +170,25 @@ wss.on("connection", (ws) => {
     Stats.playersCurrently.counter += 1;
     ws.addEventListener("message", (event) => {
         Stats.messagesReceived.counter += 1;
-        Stats.bytesReceived.counter += event.data.toString().length;
-        bytesReceivedWithinTick += event.data.toString().length;
         messagesRecievedWithinTick += 1;
 
-        if (event.data instanceof ArrayBuffer) {
-            const view = new DataView(event.data);
-
-            if (common.AmmaMovingStruct.size === view.byteLength && common.AmmaMovingStruct.kind.read(view, 0) === common.MessageKind.AmmaMoving) {
-                // console.log(`Received message from player ${id}`, message)
-                common.setMovingMask(player.moving, common.AmmaMovingStruct.moving.read(view, 0));
-                player.moved = true;
-            } else {
-                Stats.bogusAmogusMessages.counter += 1;
-                // console.log(`Received bogus-amogus message from client ${id}:`, message)
-                ws.close();
-                return;
-            }
-        } else {
+        if (!(event.data instanceof ArrayBuffer)){
             Stats.bogusAmogusMessages.counter += 1;
             // console.log(`Received bogus-amogus message from client ${id}:`, message)
+            ws.close();
+            return;
+        }
+
+        const view = new DataView(event.data);
+        Stats.bytesReceived.counter += view.byteLength;
+        bytesReceivedWithinTick += view.byteLength;
+        if (common.AmmaMovingStruct.verifyAt(view, 0)) {
+            // console.log(`Received message from player ${id}`, message)
+            common.setMovingMask(player.moving, common.AmmaMovingStruct.moving.read(view, 0));
+            player.moved = true;
+        } else {
+            // console.log(`Received bogus-amogus message from client ${id}:`, message)
+            Stats.bogusAmogusMessages.counter += 1;
             ws.close();
             return;
         }

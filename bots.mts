@@ -24,41 +24,41 @@ function createBot(): Bot {
     bot.ws.binaryType = 'arraybuffer';
 
     bot.ws.addEventListener("message", (event) => {
-        if (event.data instanceof ArrayBuffer) {
-            if (bot.me === undefined) {
-                const view = new DataView(event.data);
-                if (common.HelloStruct.size === view.byteLength && common.HelloStruct.kind.read(view, 0) === common.MessageKind.Hello) {
-                    bot.me = {
-                        id: common.HelloStruct.id.read(view, 0),
-                        x: common.HelloStruct.x.read(view, 0),
-                        y: common.HelloStruct.y.read(view, 0),
-                        moving: {
-                            'left': false,
-                            'right': false,
-                            'up': false,
-                            'down': false,
-                        },
-                        hue: common.HelloStruct.hue.read(view, 0)/256*360,
-                    }
-                    turn();
-                    setTimeout(tick, 1000/BOT_FPS);
-                    console.log(`Connected as player ${bot.me.id}`);
-                } else {
-                    console.error("Received bogus-amogus message from server. Incorrect `Hello` message.", view)
-                    bot.ws.close();
+        if (!(event.data instanceof ArrayBuffer)) {
+            return;
+        }
+        const view = new DataView(event.data);
+        if (bot.me === undefined) {
+            if (common.HelloStruct.verifyAt(view, 0)) {
+                bot.me = {
+                    id: common.HelloStruct.id.read(view, 0),
+                    x: common.HelloStruct.x.read(view, 0),
+                    y: common.HelloStruct.y.read(view, 0),
+                    moving: {
+                        'left': false,
+                        'right': false,
+                        'up': false,
+                        'down': false,
+                    },
+                    hue: common.HelloStruct.hue.read(view, 0)/256*360,
                 }
+                turn();
+                setTimeout(tick, 1000/BOT_FPS);
+                console.log(`Connected as player ${bot.me.id}`);
             } else {
-                const view = new DataView(event.data)
-                if (common.PlayerMovingStruct.size === view.byteLength && common.PlayerMovingStruct.kind.read(view, 0) === common.MessageKind.PlayerMoving) {
-                    const id = common.PlayerMovingStruct.id.read(view, 0);
-                    if (id === bot.me.id) {
-                        const moving = common.PlayerMovingStruct.moving.read(view, 0);
-                        const x = common.PlayerMovingStruct.x.read(view, 0);
-                        const y = common.PlayerMovingStruct.y.read(view, 0);
-                        common.setMovingMask(bot.me.moving, moving);
-                        bot.me.x = x;
-                        bot.me.y = y;
-                    }
+                console.error("Received bogus-amogus message from server. Incorrect `Hello` message.", view)
+                bot.ws.close();
+            }
+        } else {
+            if (common.PlayerMovingStruct.verifyAt(view, 0)) {
+                const id = common.PlayerMovingStruct.id.read(view, 0);
+                if (id === bot.me.id) {
+                    const moving = common.PlayerMovingStruct.moving.read(view, 0);
+                    const x = common.PlayerMovingStruct.x.read(view, 0);
+                    const y = common.PlayerMovingStruct.y.read(view, 0);
+                    common.setMovingMask(bot.me.moving, moving);
+                    bot.me.x = x;
+                    bot.me.y = y;
                 }
             }
         }

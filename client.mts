@@ -34,9 +34,13 @@ const DIRECTION_KEYS: {[key: string]: Direction} = {
     });
     ws.addEventListener("message", (event) => {
         // console.log('Received message', event);
+        if (!(event.data instanceof ArrayBuffer)) {
+            console.error("Received bogus-amogus message from server. Expected binary data", event);
+            ws?.close();
+        }
+        const view = new DataView(event.data);
         if (me === undefined) {
-            const view = new DataView(event.data);
-            if (common.HelloStruct.size === view.byteLength && common.HelloStruct.kind.read(view, 0) === common.MessageKind.Hello) {
+            if (common.HelloStruct.verifyAt(view, 0)) {
                 me = {
                     id: common.HelloStruct.id.read(view, 0),
                     x: common.HelloStruct.x.read(view, 0),
@@ -55,8 +59,7 @@ const DIRECTION_KEYS: {[key: string]: Direction} = {
                 ws?.close();
             }
         } else {
-            const view = new DataView(event.data)
-            if (common.PlayerJoinedStruct.size === view.byteLength && common.PlayerJoinedStruct.kind.read(view, 0) === common.MessageKind.PlayerJoined) {
+            if (common.PlayerJoinedStruct.verifyAt(view, 0)) {
                 const id = common.PlayerJoinedStruct.id.read(view, 0);
                 const player = {
                     id,
@@ -72,9 +75,9 @@ const DIRECTION_KEYS: {[key: string]: Direction} = {
                 }
                 common.setMovingMask(player.moving, common.PlayerJoinedStruct.moving.read(view, 0))
                 players.set(id, player);
-            } else if (common.PlayerLeftStruct.size === view.byteLength && common.PlayerLeftStruct.kind.read(view, 0) === common.MessageKind.PlayerLeft) {
+            } else if (common.PlayerLeftStruct.verifyAt(view, 0)) {
                 players.delete(common.PlayerLeftStruct.id.read(view, 0))
-            } else if (common.PlayerMovingStruct.size === view.byteLength && common.PlayerMovingStruct.kind.read(view, 0) === common.MessageKind.PlayerMoving) {
+            } else if (common.PlayerMovingStruct.verifyAt(view, 0)) {
                 const id = common.PlayerMovingStruct.id.read(view, 0);
                 const player = players.get(id);
                 if (player === undefined) {
