@@ -125,7 +125,7 @@ const SERVER_LIMIT = 69;
 
 interface PlayerOnServer extends Player {
     ws: WebSocket,
-    moved: boolean,
+    newMoving: number,
 }
 
 const players = new Map<number, PlayerOnServer>();
@@ -155,6 +155,7 @@ wss.on("connection", (ws) => {
         x,
         y,
         moving: 0,
+        newMoving: 0,
         hue,
         moved: false,
     }
@@ -179,8 +180,7 @@ wss.on("connection", (ws) => {
         bytesReceivedWithinTick += view.byteLength;
         if (common.AmmaMovingStruct.verifyAt(view, 0)) {
             // console.log(`Received message from player ${id}`, message)
-            player.moving = common.AmmaMovingStruct.moving.read(view, 0);
-            player.moved = true;
+            player.newMoving = common.AmmaMovingStruct.moving.read(view, 0);
         } else {
             // console.log(`Received bogus-amogus message from client ${id}:`, message)
             Stats.bogusAmogusMessages.counter += 1;
@@ -274,7 +274,9 @@ function tick() {
     })
 
     players.forEach((player) => {
-        if (player.moved) {
+        if (player.newMoving !== player.moving) {
+            player.newMoving = player.moving;
+
             const view = new DataView(new ArrayBuffer(common.PlayerMovingStruct.size));
             common.PlayerMovingStruct.kind.write(view, 0, common.MessageKind.PlayerMoving);
             common.PlayerMovingStruct.id.write(view, 0, player.id);
@@ -287,8 +289,6 @@ function tick() {
                 bytesSentCounter += view.byteLength;
                 messageSentCounter += 1;
             });
-
-            player.moved = false;
         }
     });
 
