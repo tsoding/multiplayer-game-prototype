@@ -14,15 +14,14 @@ export enum Direction {
 }
 
 export type Vector2 = {x: number, y: number};
-export const DIRECTION_VECTORS: Vector2[] = (() => {
-    console.assert(Direction.Count == 4, "The definition of Direction have changed");
-    const vectors = Array(Direction.Count);
-    vectors[Direction.Left]  = {x: -1, y: 0};
-    vectors[Direction.Right] = {x: 1, y: 0};
-    vectors[Direction.Up]    = {x: 0, y: -1};
-    vectors[Direction.Down]  = {x: 0, y: 1};
-    return vectors;
-})()
+type DirectionVectors = { [d in Direction]: Vector2 };
+export const DIRECTION_VECTORS: DirectionVectors = {
+    [Direction.Left]  : {x: -1, y: 0},
+    [Direction.Right] : {x: 1, y: 0},
+    [Direction.Up]    : {x: 0, y: -1},
+    [Direction.Down]  : {x: 0, y: 1},
+    [Direction.Count] : {x: 0, y: 0},
+}
 
 export interface Player {
     id: number,
@@ -155,7 +154,7 @@ function properMod(a: number, b: number): number {
 export function updatePlayer(player: Player, deltaTime: number) {
     let dx = 0;
     let dy = 0;
-    for (let dir = 0; dir < Direction.Count; dir += 1) {
+    for (let dir: Direction = 0; dir < Direction.Count; dir += 1) {
         if ((player.moving>>dir)&1) {
             dx += DIRECTION_VECTORS[dir].x;
             dy += DIRECTION_VECTORS[dir].y;
