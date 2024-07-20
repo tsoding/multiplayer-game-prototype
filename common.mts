@@ -38,6 +38,8 @@ export enum MessageKind {
     PlayerLeft,
     PlayerMoving,
     AmmaMoving,
+    Ping,
+    Pong,
 }
 
 interface Field {
@@ -92,6 +94,16 @@ function verifier(kindField: Field, kind: number, size: number): (view: DataView
         view.byteLength == size &&
         kindField.read(view) == kind
 }
+
+export const PingPongStruct = (() => {
+    const allocator = { size: 0 };
+    const kind     = allocUint8Field(allocator);
+    const timestamp = allocUint32Field(allocator);
+    const size = allocator.size;
+    const verifyPing = verifier(kind, MessageKind.Ping, size);
+    const verifyPong = verifier(kind, MessageKind.Pong, size);
+    return {kind, timestamp, size, verifyPing, verifyPong}
+})();
 
 export const HelloStruct = (() => {
     const allocator = { size: 0 };

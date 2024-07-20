@@ -23,6 +23,7 @@ const DIRECTION_KEYS: {[key: string]: common.Direction} = {
     let ws: WebSocket | undefined = new WebSocket(`ws://${window.location.hostname}:${common.SERVER_PORT}`);
     let me: Player | undefined = undefined;
     const players = new Map<number, Player>();
+    let ping = 0;
     ws.binaryType = 'arraybuffer';
     ws.addEventListener("close", (event) => {
         console.log("WEBSOCKET CLOSE", event)
@@ -77,6 +78,9 @@ const DIRECTION_KEYS: {[key: string]: common.Direction} = {
                 player.moving = common.PlayerMovingStruct.moving.read(view);
                 player.x = common.PlayerMovingStruct.x.read(view);
                 player.y = common.PlayerMovingStruct.y.read(view);
+            } else if (common.PingPongStruct.verifyPong(view)) {
+                ping = performance.now() - common.PingPongStruct.timestamp.read(view);
+                console.log(ping);
             } else {
                 console.error("Received bogus-amogus message from server.", view)
                 ws?.close();
@@ -87,7 +91,9 @@ const DIRECTION_KEYS: {[key: string]: common.Direction} = {
         console.log("WEBSOCKET OPEN", event)
     });
 
+    const PING_COOLDOWN = 60;
     let previousTimestamp = 0;
+    let pingCooldown = PING_COOLDOWN;
     const frame = (timestamp: number) => {
         const deltaTime = (timestamp - previousTimestamp)/1000;
         previousTimestamp = timestamp;
@@ -120,6 +126,20 @@ const DIRECTION_KEYS: {[key: string]: common.Direction} = {
                 ctx.beginPath()
                 ctx.strokeRect(me.x, me.y, common.PLAYER_SIZE, common.PLAYER_SIZE);
                 ctx.stroke();
+            }
+
+            ctx.font = "18px bold";
+            ctx.fillStyle = 'white';
+            const padding = ctx.canvas.width*0.05;
+            ctx.fillText(`Ping: ${ping.toFixed(2)}ms`, padding, padding);
+
+            pingCooldown -= 1;
+            if (pingCooldown <= 0) {
+                const view = new DataView(new ArrayBuffer(common.PingPongStruct.size));
+                common.PingPongStruct.kind.write(view, common.MessageKind.Ping);
+                common.PingPongStruct.timestamp.write(view, performance.now());
+                ws.send(view);
+                pingCooldown = PING_COOLDOWN;
             }
         }
         window.requestAnimationFrame(frame);
