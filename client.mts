@@ -80,7 +80,6 @@ const DIRECTION_KEYS: {[key: string]: common.Direction} = {
                 player.y = common.PlayerMovingStruct.y.read(view);
             } else if (common.PingPongStruct.verifyPong(view)) {
                 ping = performance.now() - common.PingPongStruct.timestamp.read(view);
-                console.log(ping);
             } else {
                 console.error("Received bogus-amogus message from server.", view)
                 ws?.close();
