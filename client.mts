@@ -134,10 +134,10 @@ const DIRECTION_KEYS: {[key: string]: common.Direction} = {
             if (!e.repeat) {
                 const direction = DIRECTION_KEYS[e.code];
                 if (direction !== undefined) {
-                    me.moving |= (1<<direction);
                     const view = new DataView(new ArrayBuffer(common.AmmaMovingStruct.size));
                     common.AmmaMovingStruct.kind.write(view, common.MessageKind.AmmaMoving);
-                    common.AmmaMovingStruct.moving.write(view, me.moving);
+                    common.AmmaMovingStruct.start.write(view, 1);
+                    common.AmmaMovingStruct.direction.write(view, direction);
                     ws.send(view);
                 }
             }
@@ -148,10 +148,10 @@ const DIRECTION_KEYS: {[key: string]: common.Direction} = {
             if (!e.repeat) {
                 const direction = DIRECTION_KEYS[e.code];
                 if (direction !== undefined) {
-                    me.moving &= ~(1<<direction);
                     const view = new DataView(new ArrayBuffer(common.AmmaMovingStruct.size));
                     common.AmmaMovingStruct.kind.write(view, common.MessageKind.AmmaMoving);
-                    common.AmmaMovingStruct.moving.write(view, me.moving);
+                    common.AmmaMovingStruct.start.write(view, 0);
+                    common.AmmaMovingStruct.direction.write(view, direction);
                     ws.send(view);
                 }
             }

@@ -129,11 +129,12 @@ export const PlayerLeftStruct = (() => {
 
 export const AmmaMovingStruct = (() => {
     const allocator = { size: 0 };
-    const kind     = allocUint8Field(allocator);
-    const moving   = allocUint8Field(allocator);
-    const size     = allocator.size;
-    const verify = verifier(kind, MessageKind.AmmaMoving, size);
-    return {kind, moving, size, verify}
+    const kind      = allocUint8Field(allocator);
+    const direction = allocUint8Field(allocator);
+    const start     = allocUint8Field(allocator);
+    const size      = allocator.size;
+    const verify    = verifier(kind, MessageKind.AmmaMoving, size);
+    return {kind, direction, start, size, verify}
 })();
 
 export const PlayerMovingStruct = (() => {

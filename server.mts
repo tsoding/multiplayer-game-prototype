@@ -180,7 +180,13 @@ wss.on("connection", (ws) => {
         bytesReceivedWithinTick += view.byteLength;
         if (common.AmmaMovingStruct.verify(view)) {
             // console.log(`Received message from player ${id}`, message)
-            player.newMoving = common.AmmaMovingStruct.moving.read(view);
+            const direction = common.AmmaMovingStruct.direction.read(view);
+            const start = common.AmmaMovingStruct.start.read(view);
+            if (start) {
+                player.newMoving |= (1<<direction);
+            } else {
+                player.newMoving &= ~(1<<direction);
+            }
         } else {
             // console.log(`Received bogus-amogus message from client ${id}:`, message)
             Stats.bogusAmogusMessages.counter += 1;

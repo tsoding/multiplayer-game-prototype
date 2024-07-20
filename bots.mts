@@ -58,18 +58,25 @@ function createBot(): Bot {
 
     function turn() {
         if (bot.me !== undefined) {
+            const view = new DataView(new ArrayBuffer(common.AmmaMovingStruct.size));
+            common.AmmaMovingStruct.kind.write(view, common.MessageKind.AmmaMoving);
+
             // Full stop
-            bot.me.moving = 0;
+            for (let direction = 0; direction < common.Direction.Count; ++direction) {
+                if ((bot.me.moving>>direction)&1) {
+                    common.AmmaMovingStruct.direction.write(view, direction);
+                    common.AmmaMovingStruct.start.write(view, 0);
+                    bot.ws.send(view);
+                }
+            }
 
             // New direction
             const direction = Math.floor(Math.random()*common.Direction.Count);
             bot.timeoutBeforeTurn = Math.random()*common.WORLD_WIDTH*0.5/common.PLAYER_SPEED;
-            bot.me.moving |= 1<<direction;
 
             // Sync
-            const view = new DataView(new ArrayBuffer(common.AmmaMovingStruct.size));
-            common.AmmaMovingStruct.kind.write(view, common.MessageKind.AmmaMoving);
-            common.AmmaMovingStruct.moving.write(view, bot.me.moving);
+            common.AmmaMovingStruct.direction.write(view, direction);
+            common.AmmaMovingStruct.start.write(view, 1);
             bot.ws.send(view);
         }
     }
