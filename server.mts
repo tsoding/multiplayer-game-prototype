@@ -178,9 +178,9 @@ wss.on("connection", (ws) => {
         const view = new DataView(event.data);
         Stats.bytesReceived.counter += view.byteLength;
         bytesReceivedWithinTick += view.byteLength;
-        if (common.AmmaMovingStruct.verifyAt(view, 0)) {
+        if (common.AmmaMovingStruct.verifyAt(view)) {
             // console.log(`Received message from player ${id}`, message)
-            player.newMoving = common.AmmaMovingStruct.moving.read(view, 0);
+            player.newMoving = common.AmmaMovingStruct.moving.read(view);
         } else {
             // console.log(`Received bogus-amogus message from client ${id}:`, message)
             Stats.bogusAmogusMessages.counter += 1;
@@ -213,11 +213,11 @@ function tick() {
         if (joinedPlayer !== undefined) { // This should never happen, but we handling none existing ids for more robustness
             // The greetings
             const view = new DataView(new ArrayBuffer(common.HelloStruct.size));
-            common.HelloStruct.kind.write(view, 0, common.MessageKind.Hello);
-            common.HelloStruct.id.write(view, 0, joinedPlayer.id);
-            common.HelloStruct.x.write(view, 0, joinedPlayer.x);
-            common.HelloStruct.y.write(view, 0, joinedPlayer.y);
-            common.HelloStruct.hue.write(view, 0, Math.floor(joinedPlayer.hue/360*256));
+            common.HelloStruct.kind.write(view, common.MessageKind.Hello);
+            common.HelloStruct.id.write(view, joinedPlayer.id);
+            common.HelloStruct.x.write(view, joinedPlayer.x);
+            common.HelloStruct.y.write(view, joinedPlayer.y);
+            common.HelloStruct.hue.write(view, Math.floor(joinedPlayer.hue/360*256));
             joinedPlayer.ws.send(view);
             bytesSentCounter += view.byteLength;
             messageSentCounter += 1
@@ -226,12 +226,12 @@ function tick() {
             players.forEach((otherPlayer) => {
                 if (joinedId !== otherPlayer.id) { // Joined player should already know about themselves
                     const view = new DataView(new ArrayBuffer(common.PlayerJoinedStruct.size))
-                    common.PlayerJoinedStruct.kind.write(view, 0, common.MessageKind.PlayerJoined);
-                    common.PlayerJoinedStruct.id.write(view, 0, otherPlayer.id);
-                    common.PlayerJoinedStruct.x.write(view, 0, otherPlayer.x);
-                    common.PlayerJoinedStruct.y.write(view, 0, otherPlayer.y);
-                    common.PlayerJoinedStruct.hue.write(view, 0, otherPlayer.hue/360*256);
-                    common.PlayerJoinedStruct.moving.write(view, 0, otherPlayer.moving);
+                    common.PlayerJoinedStruct.kind.write(view, common.MessageKind.PlayerJoined);
+                    common.PlayerJoinedStruct.id.write(view, otherPlayer.id);
+                    common.PlayerJoinedStruct.x.write(view, otherPlayer.x);
+                    common.PlayerJoinedStruct.y.write(view, otherPlayer.y);
+                    common.PlayerJoinedStruct.hue.write(view, otherPlayer.hue/360*256);
+                    common.PlayerJoinedStruct.moving.write(view, otherPlayer.moving);
                     joinedPlayer.ws.send(view);
                     bytesSentCounter += view.byteLength;
                     messageSentCounter += 1
@@ -245,12 +245,12 @@ function tick() {
         const joinedPlayer = players.get(joinedId);
         if (joinedPlayer !== undefined) { // This should never happen, but we handling none existing ids for more robustness
             const view = new DataView(new ArrayBuffer(common.PlayerJoinedStruct.size))
-            common.PlayerJoinedStruct.kind.write(view, 0, common.MessageKind.PlayerJoined);
-            common.PlayerJoinedStruct.id.write(view, 0, joinedPlayer.id);
-            common.PlayerJoinedStruct.x.write(view, 0, joinedPlayer.x);
-            common.PlayerJoinedStruct.y.write(view, 0, joinedPlayer.y);
-            common.PlayerJoinedStruct.hue.write(view, 0, joinedPlayer.hue/360*256);
-            common.PlayerJoinedStruct.moving.write(view, 0, joinedPlayer.moving);
+            common.PlayerJoinedStruct.kind.write(view, common.MessageKind.PlayerJoined);
+            common.PlayerJoinedStruct.id.write(view, joinedPlayer.id);
+            common.PlayerJoinedStruct.x.write(view, joinedPlayer.x);
+            common.PlayerJoinedStruct.y.write(view, joinedPlayer.y);
+            common.PlayerJoinedStruct.hue.write(view, joinedPlayer.hue/360*256);
+            common.PlayerJoinedStruct.moving.write(view, joinedPlayer.moving);
             players.forEach((otherPlayer) => {
                 if (joinedId !== otherPlayer.id) { // Joined player should already know about themselves
                     otherPlayer.ws.send(view);
@@ -264,8 +264,8 @@ function tick() {
     // Notifying about who left
     leftIds.forEach((leftId) => {
         const view = new DataView(new ArrayBuffer(common.PlayerLeftStruct.size))
-        common.PlayerJoinedStruct.kind.write(view, 0, common.MessageKind.PlayerLeft);
-        common.PlayerJoinedStruct.id.write(view, 0, leftId);
+        common.PlayerJoinedStruct.kind.write(view, common.MessageKind.PlayerLeft);
+        common.PlayerJoinedStruct.id.write(view, leftId);
         players.forEach((player) => {
             player.ws.send(view);
             bytesSentCounter += view.byteLength;
@@ -278,11 +278,11 @@ function tick() {
             player.moving = player.newMoving;
 
             const view = new DataView(new ArrayBuffer(common.PlayerMovingStruct.size));
-            common.PlayerMovingStruct.kind.write(view, 0, common.MessageKind.PlayerMoving);
-            common.PlayerMovingStruct.id.write(view, 0, player.id);
-            common.PlayerMovingStruct.x.write(view, 0, player.x);
-            common.PlayerMovingStruct.y.write(view, 0, player.y);
-            common.PlayerMovingStruct.moving.write(view, 0, player.moving);
+            common.PlayerMovingStruct.kind.write(view, common.MessageKind.PlayerMoving);
+            common.PlayerMovingStruct.id.write(view, player.id);
+            common.PlayerMovingStruct.x.write(view, player.x);
+            common.PlayerMovingStruct.y.write(view, player.y);
+            common.PlayerMovingStruct.moving.write(view, player.moving);
 
             players.forEach((otherPlayer) => {
                 otherPlayer.ws.send(view);

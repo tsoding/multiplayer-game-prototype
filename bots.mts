@@ -29,13 +29,13 @@ function createBot(): Bot {
         }
         const view = new DataView(event.data);
         if (bot.me === undefined) {
-            if (common.HelloStruct.verifyAt(view, 0)) {
+            if (common.HelloStruct.verifyAt(view)) {
                 bot.me = {
-                    id: common.HelloStruct.id.read(view, 0),
-                    x: common.HelloStruct.x.read(view, 0),
-                    y: common.HelloStruct.y.read(view, 0),
+                    id: common.HelloStruct.id.read(view),
+                    x: common.HelloStruct.x.read(view),
+                    y: common.HelloStruct.y.read(view),
                     moving: 0,
-                    hue: common.HelloStruct.hue.read(view, 0)/256*360,
+                    hue: common.HelloStruct.hue.read(view)/256*360,
                 }
                 turn();
                 setTimeout(tick, 1000/BOT_FPS);
@@ -45,12 +45,12 @@ function createBot(): Bot {
                 bot.ws.close();
             }
         } else {
-            if (common.PlayerMovingStruct.verifyAt(view, 0)) {
-                const id = common.PlayerMovingStruct.id.read(view, 0);
+            if (common.PlayerMovingStruct.verifyAt(view)) {
+                const id = common.PlayerMovingStruct.id.read(view);
                 if (id === bot.me.id) {
-                    bot.me.moving = common.PlayerMovingStruct.moving.read(view, 0);
-                    bot.me.x = common.PlayerMovingStruct.x.read(view, 0);
-                    bot.me.y = common.PlayerMovingStruct.y.read(view, 0);
+                    bot.me.moving = common.PlayerMovingStruct.moving.read(view);
+                    bot.me.x = common.PlayerMovingStruct.x.read(view);
+                    bot.me.y = common.PlayerMovingStruct.y.read(view);
                 }
             }
         }
@@ -68,8 +68,8 @@ function createBot(): Bot {
 
             // Sync
             const view = new DataView(new ArrayBuffer(common.AmmaMovingStruct.size));
-            common.AmmaMovingStruct.kind.write(view, 0, common.MessageKind.AmmaMoving);
-            common.AmmaMovingStruct.moving.write(view, 0, bot.me.moving);
+            common.AmmaMovingStruct.kind.write(view, common.MessageKind.AmmaMoving);
+            common.AmmaMovingStruct.moving.write(view, bot.me.moving);
             bot.ws.send(view);
         }
     }

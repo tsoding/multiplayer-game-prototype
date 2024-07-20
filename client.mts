@@ -40,13 +40,13 @@ const DIRECTION_KEYS: {[key: string]: common.Direction} = {
         }
         const view = new DataView(event.data);
         if (me === undefined) {
-            if (common.HelloStruct.verifyAt(view, 0)) {
+            if (common.HelloStruct.verifyAt(view)) {
                 me = {
-                    id: common.HelloStruct.id.read(view, 0),
-                    x: common.HelloStruct.x.read(view, 0),
-                    y: common.HelloStruct.y.read(view, 0),
+                    id: common.HelloStruct.id.read(view),
+                    x: common.HelloStruct.x.read(view),
+                    y: common.HelloStruct.y.read(view),
                     moving: 0,
-                    hue: common.HelloStruct.hue.read(view, 0)/256*360,
+                    hue: common.HelloStruct.hue.read(view)/256*360,
                 }
                 players.set(me.id, me)
             } else {
@@ -54,29 +54,29 @@ const DIRECTION_KEYS: {[key: string]: common.Direction} = {
                 ws?.close();
             }
         } else {
-            if (common.PlayerJoinedStruct.verifyAt(view, 0)) {
-                const id = common.PlayerJoinedStruct.id.read(view, 0);
+            if (common.PlayerJoinedStruct.verifyAt(view)) {
+                const id = common.PlayerJoinedStruct.id.read(view);
                 const player = {
                     id,
-                    x: common.PlayerJoinedStruct.x.read(view, 0),
-                    y: common.PlayerJoinedStruct.y.read(view, 0),
-                    moving: common.PlayerJoinedStruct.moving.read(view, 0),
-                    hue: common.PlayerJoinedStruct.hue.read(view, 0)/256*360,
+                    x: common.PlayerJoinedStruct.x.read(view),
+                    y: common.PlayerJoinedStruct.y.read(view),
+                    moving: common.PlayerJoinedStruct.moving.read(view),
+                    hue: common.PlayerJoinedStruct.hue.read(view)/256*360,
                 }
                 players.set(id, player);
-            } else if (common.PlayerLeftStruct.verifyAt(view, 0)) {
-                players.delete(common.PlayerLeftStruct.id.read(view, 0))
-            } else if (common.PlayerMovingStruct.verifyAt(view, 0)) {
-                const id = common.PlayerMovingStruct.id.read(view, 0);
+            } else if (common.PlayerLeftStruct.verifyAt(view)) {
+                players.delete(common.PlayerLeftStruct.id.read(view))
+            } else if (common.PlayerMovingStruct.verifyAt(view)) {
+                const id = common.PlayerMovingStruct.id.read(view);
                 const player = players.get(id);
                 if (player === undefined) {
                     console.error(`Received bogus-amogus message from server. We don't know anything about player with id ${id}`)
                     ws?.close();
                     return;
                 }
-                player.moving = common.PlayerMovingStruct.moving.read(view, 0);
-                player.x = common.PlayerMovingStruct.x.read(view, 0);
-                player.y = common.PlayerMovingStruct.y.read(view, 0);
+                player.moving = common.PlayerMovingStruct.moving.read(view);
+                player.x = common.PlayerMovingStruct.x.read(view);
+                player.y = common.PlayerMovingStruct.y.read(view);
             } else {
                 console.error("Received bogus-amogus message from server.", view)
                 ws?.close();
@@ -136,8 +136,8 @@ const DIRECTION_KEYS: {[key: string]: common.Direction} = {
                 if (direction !== undefined) {
                     me.moving |= (1<<direction);
                     const view = new DataView(new ArrayBuffer(common.AmmaMovingStruct.size));
-                    common.AmmaMovingStruct.kind.write(view, 0, common.MessageKind.AmmaMoving);
-                    common.AmmaMovingStruct.moving.write(view, 0, me.moving);
+                    common.AmmaMovingStruct.kind.write(view, common.MessageKind.AmmaMoving);
+                    common.AmmaMovingStruct.moving.write(view, me.moving);
                     ws.send(view);
                 }
             }
@@ -150,8 +150,8 @@ const DIRECTION_KEYS: {[key: string]: common.Direction} = {
                 if (direction !== undefined) {
                     me.moving &= ~(1<<direction);
                     const view = new DataView(new ArrayBuffer(common.AmmaMovingStruct.size));
-                    common.AmmaMovingStruct.kind.write(view, 0, common.MessageKind.AmmaMoving);
-                    common.AmmaMovingStruct.moving.write(view, 0, me.moving);
+                    common.AmmaMovingStruct.kind.write(view, common.MessageKind.AmmaMoving);
+                    common.AmmaMovingStruct.moving.write(view, me.moving);
                     ws.send(view);
                 }
             }
