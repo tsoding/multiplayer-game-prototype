@@ -29,7 +29,7 @@ function createBot(): Bot {
         }
         const view = new DataView(event.data);
         if (bot.me === undefined) {
-            if (common.HelloStruct.verifyAt(view)) {
+            if (common.HelloStruct.verify(view)) {
                 bot.me = {
                     id: common.HelloStruct.id.read(view),
                     x: common.HelloStruct.x.read(view),
@@ -45,7 +45,7 @@ function createBot(): Bot {
                 bot.ws.close();
             }
         } else {
-            if (common.PlayerMovingStruct.verifyAt(view)) {
+            if (common.PlayerMovingStruct.verify(view)) {
                 const id = common.PlayerMovingStruct.id.read(view);
                 if (id === bot.me.id) {
                     bot.me.moving = common.PlayerMovingStruct.moving.read(view);

@@ -178,7 +178,7 @@ wss.on("connection", (ws) => {
         const view = new DataView(event.data);
         Stats.bytesReceived.counter += view.byteLength;
         bytesReceivedWithinTick += view.byteLength;
-        if (common.AmmaMovingStruct.verifyAt(view)) {
+        if (common.AmmaMovingStruct.verify(view)) {
             // console.log(`Received message from player ${id}`, message)
             player.newMoving = common.AmmaMovingStruct.moving.read(view);
         } else {

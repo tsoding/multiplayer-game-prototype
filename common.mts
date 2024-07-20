@@ -101,8 +101,8 @@ export const HelloStruct = (() => {
     const y        = allocFloat32Field(allocator);
     const hue      = allocUint8Field(allocator);
     const size     = allocator.size;
-    const verifyAt = verifier(kind, MessageKind.Hello, size);
-    return {kind, id, x, y, hue, size, verifyAt}
+    const verify = verifier(kind, MessageKind.Hello, size);
+    return {kind, id, x, y, hue, size, verify}
 })();
 
 export const PlayerJoinedStruct = (() => {
@@ -114,8 +114,8 @@ export const PlayerJoinedStruct = (() => {
     const hue    = allocUint8Field(allocator);
     const moving = allocUint8Field(allocator);
     const size   = allocator.size;
-    const verifyAt = verifier(kind, MessageKind.PlayerJoined, size);
-    return {kind, id, x, y, hue, moving, size, verifyAt};
+    const verify = verifier(kind, MessageKind.PlayerJoined, size);
+    return {kind, id, x, y, hue, moving, size, verify};
 })();
 
 export const PlayerLeftStruct = (() => {
@@ -123,8 +123,8 @@ export const PlayerLeftStruct = (() => {
     const kind     = allocUint8Field(allocator);
     const id       = allocUint32Field(allocator);
     const size     = allocator.size;
-    const verifyAt = verifier(kind, MessageKind.PlayerLeft, size);
-    return {kind, id, size, verifyAt};
+    const verify = verifier(kind, MessageKind.PlayerLeft, size);
+    return {kind, id, size, verify};
 })();
 
 export const AmmaMovingStruct = (() => {
@@ -132,8 +132,8 @@ export const AmmaMovingStruct = (() => {
     const kind     = allocUint8Field(allocator);
     const moving   = allocUint8Field(allocator);
     const size     = allocator.size;
-    const verifyAt = verifier(kind, MessageKind.AmmaMoving, size);
-    return {kind, moving, size, verifyAt}
+    const verify = verifier(kind, MessageKind.AmmaMoving, size);
+    return {kind, moving, size, verify}
 })();
 
 export const PlayerMovingStruct = (() => {
@@ -144,8 +144,8 @@ export const PlayerMovingStruct = (() => {
     const y      = allocFloat32Field(allocator);
     const moving = allocUint8Field(allocator);
     const size   = allocator.size;
-    const verifyAt = verifier(kind, MessageKind.PlayerMoving, size);
-    return {kind, id, x, y, moving, size, verifyAt};
+    const verify = verifier(kind, MessageKind.PlayerMoving, size);
+    return {kind, id, x, y, moving, size, verify};
 })();
 
 function properMod(a: number, b: number): number {
