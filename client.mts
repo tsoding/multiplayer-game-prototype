@@ -84,7 +84,6 @@ const DIRECTION_KEYS: {[key: string]: common.Direction} = {
                 }
             } else if (common.PlayersMovingHeaderStruct.verify(view)) {
                 const count = common.PlayersMovingHeaderStruct.count.read(view);
-
                 for (let i = 0; i < count; ++i) {
                     const playerView = new DataView(event.data, common.PlayersMovingHeaderStruct.size + i*common.PlayerStruct.size, common.PlayerStruct.size);
 
