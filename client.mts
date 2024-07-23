@@ -55,29 +55,46 @@ const DIRECTION_KEYS: {[key: string]: common.Direction} = {
                 ws?.close();
             }
         } else {
-            if (common.PlayerJoinedStruct.verify(view)) {
-                const id = common.PlayerJoinedStruct.id.read(view);
-                const player = {
-                    id,
-                    x: common.PlayerJoinedStruct.x.read(view),
-                    y: common.PlayerJoinedStruct.y.read(view),
-                    moving: common.PlayerJoinedStruct.moving.read(view),
-                    hue: common.PlayerJoinedStruct.hue.read(view)/256*360,
+            if (common.BatchHeaderStruct.verifyJoined(view)) {
+                const count = common.BatchHeaderStruct.count.read(view);
+                for (let i = 0; i < count; ++i) {
+                    const playerView = new DataView(event.data, common.BatchHeaderStruct.size + i*common.PlayerStruct.size, common.PlayerStruct.size);
+                    const id = common.PlayerStruct.id.read(playerView);
+                    const player = players.get(id);
+                    if (player !== undefined) {
+                        player.x = common.PlayerStruct.x.read(playerView);
+                        player.y = common.PlayerStruct.y.read(playerView);
+                        player.moving = common.PlayerStruct.moving.read(playerView);
+                        player.hue = common.PlayerStruct.hue.read(playerView)/256*360;
+                    } else {
+                        players.set(id, {
+                            id,
+                            x: common.PlayerStruct.x.read(playerView),
+                            y: common.PlayerStruct.y.read(playerView),
+                            moving: common.PlayerStruct.moving.read(playerView),
+                            hue: common.PlayerStruct.hue.read(playerView)/256*360,
+                        });
+                    }
                 }
-                players.set(id, player);
             } else if (common.PlayerLeftStruct.verify(view)) {
                 players.delete(common.PlayerLeftStruct.id.read(view))
-            } else if (common.PlayerMovingStruct.verify(view)) {
-                const id = common.PlayerMovingStruct.id.read(view);
-                const player = players.get(id);
-                if (player === undefined) {
-                    console.error(`Received bogus-amogus message from server. We don't know anything about player with id ${id}`)
-                    ws?.close();
-                    return;
+            } else if (common.BatchHeaderStruct.verifyMoving(view)) {
+                const count = common.BatchHeaderStruct.count.read(view);
+
+                for (let i = 0; i < count; ++i) {
+                    const playerView = new DataView(event.data, common.BatchHeaderStruct.size + i*common.PlayerStruct.size, common.PlayerStruct.size);
+
+                    const id = common.PlayerStruct.id.read(playerView);
+                    const player = players.get(id);
+                    if (player === undefined) {
+                        console.error(`Received bogus-amogus message from server. We don't know anything about player with id ${id}`)
+                        ws?.close();
+                        return;
+                    }
+                    player.moving = common.PlayerStruct.moving.read(playerView);
+                    player.x = common.PlayerStruct.x.read(playerView);
+                    player.y = common.PlayerStruct.y.read(playerView);
                 }
-                player.moving = common.PlayerMovingStruct.moving.read(view);
-                player.x = common.PlayerMovingStruct.x.read(view);
-                player.y = common.PlayerMovingStruct.y.read(view);
             } else if (common.PingPongStruct.verifyPong(view)) {
                 ping = performance.now() - common.PingPongStruct.timestamp.read(view);
             } else {

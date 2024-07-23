@@ -121,7 +121,7 @@ namespace Stats {
 }
 
 const SERVER_FPS = 60;
-const SERVER_LIMIT = 69;
+const SERVER_LIMIT = 1000;
 
 interface PlayerOnServer extends Player {
     ws: WebSocket,
@@ -216,65 +216,86 @@ function tick() {
     let messageSentCounter = 0;
     let bytesSentCounter = 0;
 
-    // Greeting all the joined players and notifying them about other players
-    joinedIds.forEach((joinedId) => {
-        const joinedPlayer = players.get(joinedId);
-        if (joinedPlayer !== undefined) { // This should never happen, but we handling none existing ids for more robustness
-            // The greetings
-            const view = new DataView(new ArrayBuffer(common.HelloStruct.size));
-            common.HelloStruct.kind.write(view, common.MessageKind.Hello);
-            common.HelloStruct.id.write(view, joinedPlayer.id);
-            common.HelloStruct.x.write(view, joinedPlayer.x);
-            common.HelloStruct.y.write(view, joinedPlayer.y);
-            common.HelloStruct.hue.write(view, Math.floor(joinedPlayer.hue/360*256));
-            joinedPlayer.ws.send(view);
-            bytesSentCounter += view.byteLength;
-            messageSentCounter += 1
 
-            // Reconstructing the state of the other players
-            players.forEach((otherPlayer) => {
-                if (joinedId !== otherPlayer.id) { // Joined player should already know about themselves
-                    const view = new DataView(new ArrayBuffer(common.PlayerJoinedStruct.size))
-                    common.PlayerJoinedStruct.kind.write(view, common.MessageKind.PlayerJoined);
-                    common.PlayerJoinedStruct.id.write(view, otherPlayer.id);
-                    common.PlayerJoinedStruct.x.write(view, otherPlayer.x);
-                    common.PlayerJoinedStruct.y.write(view, otherPlayer.y);
-                    common.PlayerJoinedStruct.hue.write(view, otherPlayer.hue/360*256);
-                    common.PlayerJoinedStruct.moving.write(view, otherPlayer.moving);
-                    joinedPlayer.ws.send(view);
-                    bytesSentCounter += view.byteLength;
-                    messageSentCounter += 1
-                }
-            })
-        }
-    })
+    // Initialize joined player
+    {
+        const count = players.size;
+        const buffer = new ArrayBuffer(common.BatchHeaderStruct.size + count*common.PlayerStruct.size);
+        const headerView = new DataView(buffer, 0, common.BatchHeaderStruct.size);
+        common.BatchHeaderStruct.kind.write(headerView, common.MessageKind.PlayerJoined);
+        common.BatchHeaderStruct.count.write(headerView, count);
 
-    // Notifying about who joined
-    joinedIds.forEach((joinedId) => {
-        const joinedPlayer = players.get(joinedId);
-        if (joinedPlayer !== undefined) { // This should never happen, but we handling none existing ids for more robustness
-            const view = new DataView(new ArrayBuffer(common.PlayerJoinedStruct.size))
-            common.PlayerJoinedStruct.kind.write(view, common.MessageKind.PlayerJoined);
-            common.PlayerJoinedStruct.id.write(view, joinedPlayer.id);
-            common.PlayerJoinedStruct.x.write(view, joinedPlayer.x);
-            common.PlayerJoinedStruct.y.write(view, joinedPlayer.y);
-            common.PlayerJoinedStruct.hue.write(view, joinedPlayer.hue/360*256);
-            common.PlayerJoinedStruct.moving.write(view, joinedPlayer.moving);
-            players.forEach((otherPlayer) => {
-                if (joinedId !== otherPlayer.id) { // Joined player should already know about themselves
-                    otherPlayer.ws.send(view);
-                    bytesSentCounter += view.byteLength;
-                    messageSentCounter += 1
-                }
-            })
-        }
-    })
+        // Reconstructing the state of the other players
+        let index = 0;
+        players.forEach((player) => {
+            const playerView = new DataView(buffer, common.BatchHeaderStruct.size + index*common.PlayerStruct.size);
+            common.PlayerStruct.id.write(playerView, player.id);
+            common.PlayerStruct.x.write(playerView, player.x);
+            common.PlayerStruct.y.write(playerView, player.y);
+            common.PlayerStruct.hue.write(playerView, player.hue/360*256);
+            common.PlayerStruct.moving.write(playerView, player.moving);
+            index += 1;
+        })
+
+        // Greeting all the joined players and notifying them about other players
+        joinedIds.forEach((joinedId) => {
+            const joinedPlayer = players.get(joinedId);
+            if (joinedPlayer !== undefined) { // This should never happen, but we handling none existing ids for more robustness
+                // The greetings
+                const view = new DataView(new ArrayBuffer(common.HelloStruct.size));
+                common.HelloStruct.kind.write(view, common.MessageKind.Hello);
+                common.HelloStruct.id.write(view, joinedPlayer.id);
+                common.HelloStruct.x.write(view, joinedPlayer.x);
+                common.HelloStruct.y.write(view, joinedPlayer.y);
+                common.HelloStruct.hue.write(view, Math.floor(joinedPlayer.hue/360*256));
+                joinedPlayer.ws.send(view);
+                bytesSentCounter += view.byteLength;
+                messageSentCounter += 1
+
+                // Reconstructing the state of the other players
+                joinedPlayer.ws.send(buffer);
+                bytesSentCounter += buffer.byteLength;
+                messageSentCounter += 1
+            }
+        })
+    }
+
+    // Notifying old player about who joined
+    {
+        const count = joinedIds.size;
+        const buffer = new ArrayBuffer(common.BatchHeaderStruct.size + count*common.PlayerStruct.size);
+        const headerView = new DataView(buffer, 0, common.BatchHeaderStruct.size);
+        common.BatchHeaderStruct.kind.write(headerView, common.MessageKind.PlayerJoined);
+        common.BatchHeaderStruct.count.write(headerView, count);
+
+        let index = 0;
+        joinedIds.forEach((joinedId) => {
+            const joinedPlayer = players.get(joinedId);
+            if (joinedPlayer !== undefined) { // This should never happen, but we handling none existing ids for more robustness
+                const playerView = new DataView(buffer, common.BatchHeaderStruct.size + index*common.PlayerStruct.size);
+                common.PlayerStruct.id.write(playerView, joinedPlayer.id);
+                common.PlayerStruct.x.write(playerView, joinedPlayer.x);
+                common.PlayerStruct.y.write(playerView, joinedPlayer.y);
+                common.PlayerStruct.hue.write(playerView, joinedPlayer.hue/360*256);
+                common.PlayerStruct.moving.write(playerView, joinedPlayer.moving);
+                index += 1;
+            }
+        });
+
+        players.forEach((player) => {
+            if (!joinedIds.has(player.id)) { // Joined player should already know about themselves
+                player.ws.send(buffer);
+                bytesSentCounter += buffer.byteLength;
+                messageSentCounter += 1
+            }
+        })
+    }
 
     // Notifying about who left
     leftIds.forEach((leftId) => {
         const view = new DataView(new ArrayBuffer(common.PlayerLeftStruct.size))
-        common.PlayerJoinedStruct.kind.write(view, common.MessageKind.PlayerLeft);
-        common.PlayerJoinedStruct.id.write(view, leftId);
+        common.PlayerLeftStruct.kind.write(view, common.MessageKind.PlayerLeft);
+        common.PlayerLeftStruct.id.write(view, leftId);
         players.forEach((player) => {
             player.ws.send(view);
             bytesSentCounter += view.byteLength;
@@ -282,24 +303,40 @@ function tick() {
         })
     })
 
-    players.forEach((player) => {
-        if (player.newMoving !== player.moving) {
-            player.moving = player.newMoving;
+    // Notify about moving player
+    {
+        let count = 0;
+        players.forEach((player) => {
+            if (player.newMoving !== player.moving) {
+                count += 1;
+            }
+        })
+        if (count > 0) {
+            const buffer = new ArrayBuffer(common.BatchHeaderStruct.size + count*common.PlayerStruct.size);
+            const headerView = new DataView(buffer, 0, common.BatchHeaderStruct.size);
+            common.BatchHeaderStruct.kind.write(headerView, common.MessageKind.PlayerMoving);
+            common.BatchHeaderStruct.count.write(headerView, count);
 
-            const view = new DataView(new ArrayBuffer(common.PlayerMovingStruct.size));
-            common.PlayerMovingStruct.kind.write(view, common.MessageKind.PlayerMoving);
-            common.PlayerMovingStruct.id.write(view, player.id);
-            common.PlayerMovingStruct.x.write(view, player.x);
-            common.PlayerMovingStruct.y.write(view, player.y);
-            common.PlayerMovingStruct.moving.write(view, player.moving);
+            let index = 0;
+            players.forEach((player) => {
+                if (player.newMoving !== player.moving) {
+                    player.moving = player.newMoving;
+                    const playerView = new DataView(buffer, common.BatchHeaderStruct.size + index*common.PlayerStruct.size);
+                    common.PlayerStruct.id.write(playerView, player.id);
+                    common.PlayerStruct.x.write(playerView, player.x);
+                    common.PlayerStruct.y.write(playerView, player.y);
+                    common.PlayerStruct.moving.write(playerView, player.moving);
+                    index += 1;
+                }
+            });
 
-            players.forEach((otherPlayer) => {
-                otherPlayer.ws.send(view);
-                bytesSentCounter += view.byteLength;
+            players.forEach((player) => {
+                player.ws.send(buffer);
+                bytesSentCounter += buffer.byteLength;
                 messageSentCounter += 1;
             });
         }
-    });
+    }
 
     // Simulating the world for one server tick.
     players.forEach((player) => common.updatePlayer(player, deltaTime))

@@ -50,6 +50,7 @@ interface Field {
 }
 
 const UINT8_SIZE = 1;
+const UINT16_SIZE = 2;
 const UINT32_SIZE = 4;
 const FLOAT32_SIZE = 4;
 
@@ -62,6 +63,18 @@ function allocUint8Field(allocator: { size: number }): Field {
         size,
         read: (view) => view.getUint8(offset),
         write: (view, value) => view.setUint8(offset, value)
+    }
+}
+
+function allocUint16Field(allocator: { size: number }): Field {
+    const offset = allocator.size;
+    const size = UINT16_SIZE;
+    allocator.size += size;
+    return {
+        offset,
+        size,
+        read: (view) => view.getUint16(offset),
+        write: (view, value) => view.setUint16(offset, value)
     }
 }
 
@@ -117,19 +130,6 @@ export const HelloStruct = (() => {
     return {kind, id, x, y, hue, size, verify}
 })();
 
-export const PlayerJoinedStruct = (() => {
-    const allocator = { size: 0 };
-    const kind   = allocUint8Field(allocator);
-    const id     = allocUint32Field(allocator);
-    const x      = allocFloat32Field(allocator);
-    const y      = allocFloat32Field(allocator);
-    const hue    = allocUint8Field(allocator);
-    const moving = allocUint8Field(allocator);
-    const size   = allocator.size;
-    const verify = verifier(kind, MessageKind.PlayerJoined, size);
-    return {kind, id, x, y, hue, moving, size, verify};
-})();
-
 export const PlayerLeftStruct = (() => {
     const allocator = { size: 0 };
     const kind     = allocUint8Field(allocator);
@@ -149,16 +149,34 @@ export const AmmaMovingStruct = (() => {
     return {kind, direction, start, size, verify}
 })();
 
-export const PlayerMovingStruct = (() => {
+// [kind] [count] [id] [x] [y] [moving] [id] [x] [y] [moving] [id] [x] [y] [moving]
+//                ^
+
+export const PlayerStruct = (() => {
     const allocator = { size: 0 };
-    const kind   = allocUint8Field(allocator);
     const id     = allocUint32Field(allocator);
     const x      = allocFloat32Field(allocator);
     const y      = allocFloat32Field(allocator);
+    const hue    = allocUint8Field(allocator);
     const moving = allocUint8Field(allocator);
     const size   = allocator.size;
-    const verify = verifier(kind, MessageKind.PlayerMoving, size);
-    return {kind, id, x, y, moving, size, verify};
+    return {id, x, y, hue, moving, size};
+})();
+
+export const BatchHeaderStruct = (() => {
+    const allocator = { size: 0 };
+    const kind   = allocUint8Field(allocator);
+    const count  = allocUint16Field(allocator);
+    const size   = allocator.size;
+    const verifyMoving = (view: DataView) =>
+        view.byteLength >= size &&
+        (view.byteLength - size)%PlayerStruct.size === 0 &&
+        kind.read(view) == MessageKind.PlayerMoving;
+    const verifyJoined = (view: DataView) =>
+        view.byteLength >= size &&
+        (view.byteLength - size)%PlayerStruct.size === 0 &&
+        kind.read(view) == MessageKind.PlayerJoined;
+    return {kind, count, size, verifyMoving, verifyJoined};
 })();
 
 function properMod(a: number, b: number): number {

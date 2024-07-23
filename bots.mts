@@ -45,12 +45,18 @@ function createBot(): Bot {
                 bot.ws.close();
             }
         } else {
-            if (common.PlayerMovingStruct.verify(view)) {
-                const id = common.PlayerMovingStruct.id.read(view);
-                if (id === bot.me.id) {
-                    bot.me.moving = common.PlayerMovingStruct.moving.read(view);
-                    bot.me.x = common.PlayerMovingStruct.x.read(view);
-                    bot.me.y = common.PlayerMovingStruct.y.read(view);
+            if (common.BatchHeaderStruct.verifyMoving(view)) {
+                const count = common.BatchHeaderStruct.count.read(view);
+
+                for (let i = 0; i < count; ++i) {
+                    const playerView = new DataView(event.data, common.BatchHeaderStruct.size + i*common.PlayerStruct.size, common.PlayerStruct.size);
+
+                    const id = common.PlayerStruct.id.read(playerView);
+                    if (id === bot.me.id) {
+                        bot.me.moving = common.PlayerStruct.moving.read(playerView);
+                        bot.me.x = common.PlayerStruct.x.read(playerView);
+                        bot.me.y = common.PlayerStruct.y.read(playerView);
+                    }
                 }
             }
         }
@@ -100,4 +106,4 @@ function createBot(): Bot {
 }
 
 let bots: Array<Bot> = []
-for (let i = 0; i < 30; ++i) bots.push(createBot())
+for (let i = 0; i < 200; ++i) bots.push(createBot())
