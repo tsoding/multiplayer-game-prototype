@@ -291,17 +291,26 @@ function tick() {
         })
     }
 
-    // Notifying about who left
-    leftIds.forEach((leftId) => {
-        const view = new DataView(new ArrayBuffer(common.PlayerLeftStruct.size))
-        common.PlayerLeftStruct.kind.write(view, common.MessageKind.PlayerLeft);
-        common.PlayerLeftStruct.id.write(view, leftId);
-        players.forEach((player) => {
-            player.ws.send(view);
-            bytesSentCounter += view.byteLength;
-            messageSentCounter += 1
-        })
-    })
+    // Notifying about whom left
+    {
+        const count = leftIds.size;
+        if (count > 0) {
+            const buffer = new ArrayBuffer(common.PlayersLeftHeaderStruct.size + count*common.UINT32_SIZE);
+            const view = new DataView(buffer);
+            common.PlayersLeftHeaderStruct.kind.write(view, common.MessageKind.PlayerLeft);
+            common.PlayersLeftHeaderStruct.count.write(view, count);
+            let index = 0;
+            leftIds.forEach((leftId) => {
+                view.setUint32(common.PlayersLeftHeaderStruct.size + index*common.UINT32_SIZE, leftId, true);
+                index += 1;
+            })
+            players.forEach((player) => {
+                player.ws.send(view);
+                bytesSentCounter += view.byteLength;
+                messageSentCounter += 1
+            })
+        }
+    }
 
     // Notify about moving player
     {

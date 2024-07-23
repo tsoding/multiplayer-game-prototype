@@ -76,8 +76,12 @@ const DIRECTION_KEYS: {[key: string]: common.Direction} = {
                         });
                     }
                 }
-            } else if (common.PlayerLeftStruct.verify(view)) {
-                players.delete(common.PlayerLeftStruct.id.read(view))
+            } else if (common.PlayersLeftHeaderStruct.verify(view)) {
+                const count = common.PlayersLeftHeaderStruct.count.read(view);
+                for (let i = 0; i < count; ++i) {
+                    const id = view.getUint32(common.PlayersLeftHeaderStruct.size + i*common.UINT32_SIZE, true);
+                    players.delete(id);
+                }
             } else if (common.BatchHeaderStruct.verifyMoving(view)) {
                 const count = common.BatchHeaderStruct.count.read(view);
 

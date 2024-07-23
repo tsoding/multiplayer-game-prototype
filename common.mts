@@ -49,10 +49,10 @@ interface Field {
     write(view: DataView, value: number): void;
 }
 
-const UINT8_SIZE = 1;
-const UINT16_SIZE = 2;
-const UINT32_SIZE = 4;
-const FLOAT32_SIZE = 4;
+export const UINT8_SIZE = 1;
+export const UINT16_SIZE = 2;
+export const UINT32_SIZE = 4;
+export const FLOAT32_SIZE = 4;
 
 function allocUint8Field(allocator: { size: number }): Field {
     const offset = allocator.size;
@@ -130,15 +130,6 @@ export const HelloStruct = (() => {
     return {kind, id, x, y, hue, size, verify}
 })();
 
-export const PlayerLeftStruct = (() => {
-    const allocator = { size: 0 };
-    const kind     = allocUint8Field(allocator);
-    const id       = allocUint32Field(allocator);
-    const size     = allocator.size;
-    const verify = verifier(kind, MessageKind.PlayerLeft, size);
-    return {kind, id, size, verify};
-})();
-
 export const AmmaMovingStruct = (() => {
     const allocator = { size: 0 };
     const kind      = allocUint8Field(allocator);
@@ -177,6 +168,18 @@ export const BatchHeaderStruct = (() => {
         (view.byteLength - size)%PlayerStruct.size === 0 &&
         kind.read(view) == MessageKind.PlayerJoined;
     return {kind, count, size, verifyMoving, verifyJoined};
+})();
+
+export const PlayersLeftHeaderStruct = (() => {
+    const allocator = { size: 0 };
+    const kind = allocUint8Field(allocator);
+    const count = allocUint16Field(allocator);
+    const size = allocator.size;
+    const verify = (view: DataView) =>
+        view.byteLength >= size &&
+        (view.byteLength - size)%UINT32_SIZE === 0&&
+        kind.read(view) === MessageKind.PlayerLeft;
+    return {kind, count, size, verify};
 })();
 
 function properMod(a: number, b: number): number {
