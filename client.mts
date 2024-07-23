@@ -55,10 +55,10 @@ const DIRECTION_KEYS: {[key: string]: common.Direction} = {
                 ws?.close();
             }
         } else {
-            if (common.BatchHeaderStruct.verifyJoined(view)) {
-                const count = common.BatchHeaderStruct.count.read(view);
+            if (common.PlayersJoinedHeaderStruct.verify(view)) {
+                const count = common.PlayersJoinedHeaderStruct.count.read(view);
                 for (let i = 0; i < count; ++i) {
-                    const playerView = new DataView(event.data, common.BatchHeaderStruct.size + i*common.PlayerStruct.size, common.PlayerStruct.size);
+                    const playerView = new DataView(event.data, common.PlayersJoinedHeaderStruct.size + i*common.PlayerStruct.size, common.PlayerStruct.size);
                     const id = common.PlayerStruct.id.read(playerView);
                     const player = players.get(id);
                     if (player !== undefined) {
@@ -82,11 +82,11 @@ const DIRECTION_KEYS: {[key: string]: common.Direction} = {
                     const id = view.getUint32(common.PlayersLeftHeaderStruct.size + i*common.UINT32_SIZE, true);
                     players.delete(id);
                 }
-            } else if (common.BatchHeaderStruct.verifyMoving(view)) {
-                const count = common.BatchHeaderStruct.count.read(view);
+            } else if (common.PlayersMovingHeaderStruct.verify(view)) {
+                const count = common.PlayersMovingHeaderStruct.count.read(view);
 
                 for (let i = 0; i < count; ++i) {
-                    const playerView = new DataView(event.data, common.BatchHeaderStruct.size + i*common.PlayerStruct.size, common.PlayerStruct.size);
+                    const playerView = new DataView(event.data, common.PlayersMovingHeaderStruct.size + i*common.PlayerStruct.size, common.PlayerStruct.size);
 
                     const id = common.PlayerStruct.id.read(playerView);
                     const player = players.get(id);

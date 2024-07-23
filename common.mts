@@ -154,20 +154,28 @@ export const PlayerStruct = (() => {
     return {id, x, y, hue, moving, size};
 })();
 
-export const BatchHeaderStruct = (() => {
+export const PlayersJoinedHeaderStruct = (() => {
     const allocator = { size: 0 };
     const kind   = allocUint8Field(allocator);
     const count  = allocUint16Field(allocator);
     const size   = allocator.size;
-    const verifyMoving = (view: DataView) =>
-        view.byteLength >= size &&
-        (view.byteLength - size)%PlayerStruct.size === 0 &&
-        kind.read(view) == MessageKind.PlayerMoving;
-    const verifyJoined = (view: DataView) =>
+    const verify = (view: DataView) =>
         view.byteLength >= size &&
         (view.byteLength - size)%PlayerStruct.size === 0 &&
         kind.read(view) == MessageKind.PlayerJoined;
-    return {kind, count, size, verifyMoving, verifyJoined};
+    return {kind, count, size, verify};
+})();
+
+export const PlayersMovingHeaderStruct = (() => {
+    const allocator = { size: 0 };
+    const kind   = allocUint8Field(allocator);
+    const count  = allocUint16Field(allocator);
+    const size   = allocator.size;
+    const verify = (view: DataView) =>
+        view.byteLength >= size &&
+        (view.byteLength - size)%PlayerStruct.size === 0 &&
+        kind.read(view) == MessageKind.PlayerMoving;
+    return {kind, count, size, verify};
 })();
 
 export const PlayersLeftHeaderStruct = (() => {

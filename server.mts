@@ -220,15 +220,15 @@ function tick() {
     // Initialize joined player
     {
         const count = players.size;
-        const buffer = new ArrayBuffer(common.BatchHeaderStruct.size + count*common.PlayerStruct.size);
-        const headerView = new DataView(buffer, 0, common.BatchHeaderStruct.size);
-        common.BatchHeaderStruct.kind.write(headerView, common.MessageKind.PlayerJoined);
-        common.BatchHeaderStruct.count.write(headerView, count);
+        const buffer = new ArrayBuffer(common.PlayersJoinedHeaderStruct.size + count*common.PlayerStruct.size);
+        const headerView = new DataView(buffer, 0, common.PlayersJoinedHeaderStruct.size);
+        common.PlayersJoinedHeaderStruct.kind.write(headerView, common.MessageKind.PlayerJoined);
+        common.PlayersJoinedHeaderStruct.count.write(headerView, count);
 
         // Reconstructing the state of the other players
         let index = 0;
         players.forEach((player) => {
-            const playerView = new DataView(buffer, common.BatchHeaderStruct.size + index*common.PlayerStruct.size);
+            const playerView = new DataView(buffer, common.PlayersJoinedHeaderStruct.size + index*common.PlayerStruct.size);
             common.PlayerStruct.id.write(playerView, player.id);
             common.PlayerStruct.x.write(playerView, player.x);
             common.PlayerStruct.y.write(playerView, player.y);
@@ -263,16 +263,16 @@ function tick() {
     // Notifying old player about who joined
     {
         const count = joinedIds.size;
-        const buffer = new ArrayBuffer(common.BatchHeaderStruct.size + count*common.PlayerStruct.size);
-        const headerView = new DataView(buffer, 0, common.BatchHeaderStruct.size);
-        common.BatchHeaderStruct.kind.write(headerView, common.MessageKind.PlayerJoined);
-        common.BatchHeaderStruct.count.write(headerView, count);
+        const buffer = new ArrayBuffer(common.PlayersJoinedHeaderStruct.size + count*common.PlayerStruct.size);
+        const headerView = new DataView(buffer, 0, common.PlayersJoinedHeaderStruct.size);
+        common.PlayersJoinedHeaderStruct.kind.write(headerView, common.MessageKind.PlayerJoined);
+        common.PlayersJoinedHeaderStruct.count.write(headerView, count);
 
         let index = 0;
         joinedIds.forEach((joinedId) => {
             const joinedPlayer = players.get(joinedId);
             if (joinedPlayer !== undefined) { // This should never happen, but we handling none existing ids for more robustness
-                const playerView = new DataView(buffer, common.BatchHeaderStruct.size + index*common.PlayerStruct.size);
+                const playerView = new DataView(buffer, common.PlayersJoinedHeaderStruct.size + index*common.PlayerStruct.size);
                 common.PlayerStruct.id.write(playerView, joinedPlayer.id);
                 common.PlayerStruct.x.write(playerView, joinedPlayer.x);
                 common.PlayerStruct.y.write(playerView, joinedPlayer.y);
@@ -321,16 +321,16 @@ function tick() {
             }
         })
         if (count > 0) {
-            const buffer = new ArrayBuffer(common.BatchHeaderStruct.size + count*common.PlayerStruct.size);
-            const headerView = new DataView(buffer, 0, common.BatchHeaderStruct.size);
-            common.BatchHeaderStruct.kind.write(headerView, common.MessageKind.PlayerMoving);
-            common.BatchHeaderStruct.count.write(headerView, count);
+            const buffer = new ArrayBuffer(common.PlayersMovingHeaderStruct.size + count*common.PlayerStruct.size);
+            const headerView = new DataView(buffer, 0, common.PlayersMovingHeaderStruct.size);
+            common.PlayersMovingHeaderStruct.kind.write(headerView, common.MessageKind.PlayerMoving);
+            common.PlayersMovingHeaderStruct.count.write(headerView, count);
 
             let index = 0;
             players.forEach((player) => {
                 if (player.newMoving !== player.moving) {
                     player.moving = player.newMoving;
-                    const playerView = new DataView(buffer, common.BatchHeaderStruct.size + index*common.PlayerStruct.size);
+                    const playerView = new DataView(buffer, common.PlayersMovingHeaderStruct.size + index*common.PlayerStruct.size);
                     common.PlayerStruct.id.write(playerView, player.id);
                     common.PlayerStruct.x.write(playerView, player.x);
                     common.PlayerStruct.y.write(playerView, player.y);
