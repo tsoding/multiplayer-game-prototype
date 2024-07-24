@@ -188,8 +188,8 @@ wss.on("connection", (ws) => {
             } else {
                 player.newMoving &= ~(1<<direction);
             }
-        } else if (common.PingPongStruct.verifyPing(view)) {
-            pingIds.set(id, common.PingPongStruct.timestamp.read(view));
+        } else if (common.PingStruct.verify(view)) {
+            pingIds.set(id, common.PingStruct.timestamp.read(view));
         } else {
             // console.log(`Received bogus-amogus message from client ${id}:`, message)
             Stats.bogusAmogusMessages.counter += 1;
@@ -356,9 +356,9 @@ function tick() {
     pingIds.forEach((timestamp, id) => {
         const player = players.get(id);
         if (player !== undefined) { // This MAY happen. A player may send a ping and leave.
-            const view = new DataView(new ArrayBuffer(common.PingPongStruct.size));
-            common.PingPongStruct.kind.write(view, common.MessageKind.Pong);
-            common.PingPongStruct.timestamp.write(view, timestamp);
+            const view = new DataView(new ArrayBuffer(common.PongStruct.size));
+            common.PongStruct.kind.write(view, common.MessageKind.Pong);
+            common.PongStruct.timestamp.write(view, timestamp);
             player.ws.send(view);
             bytesSentCounter += view.byteLength;
             messageSentCounter += 1;

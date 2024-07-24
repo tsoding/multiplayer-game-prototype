@@ -108,14 +108,22 @@ function verifier(kindField: Field, kind: number, size: number): (view: DataView
         kindField.read(view) == kind
 }
 
-export const PingPongStruct = (() => {
+export const PingStruct = (() => {
     const allocator = { size: 0 };
-    const kind     = allocUint8Field(allocator);
+    const kind      = allocUint8Field(allocator);
     const timestamp = allocUint32Field(allocator);
-    const size = allocator.size;
-    const verifyPing = verifier(kind, MessageKind.Ping, size);
-    const verifyPong = verifier(kind, MessageKind.Pong, size);
-    return {kind, timestamp, size, verifyPing, verifyPong}
+    const size      = allocator.size;
+    const verify    = verifier(kind, MessageKind.Ping, size);
+    return {kind, timestamp, size, verify}
+})();
+
+export const PongStruct = (() => {
+    const allocator = { size: 0 };
+    const kind      = allocUint8Field(allocator);
+    const timestamp = allocUint32Field(allocator);
+    const size      = allocator.size;
+    const verify    = verifier(kind, MessageKind.Pong, size);
+    return {kind, timestamp, size, verify}
 })();
 
 export const HelloStruct = (() => {

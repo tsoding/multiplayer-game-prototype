@@ -98,8 +98,8 @@ const DIRECTION_KEYS: {[key: string]: common.Direction} = {
                     player.x = common.PlayerStruct.x.read(playerView);
                     player.y = common.PlayerStruct.y.read(playerView);
                 }
-            } else if (common.PingPongStruct.verifyPong(view)) {
-                ping = performance.now() - common.PingPongStruct.timestamp.read(view);
+            } else if (common.PongStruct.verify(view)) {
+                ping = performance.now() - common.PongStruct.timestamp.read(view);
             } else {
                 console.error("Received bogus-amogus message from server.", view)
                 ws?.close();
@@ -154,9 +154,9 @@ const DIRECTION_KEYS: {[key: string]: common.Direction} = {
 
             pingCooldown -= 1;
             if (pingCooldown <= 0) {
-                const view = new DataView(new ArrayBuffer(common.PingPongStruct.size));
-                common.PingPongStruct.kind.write(view, common.MessageKind.Ping);
-                common.PingPongStruct.timestamp.write(view, performance.now());
+                const view = new DataView(new ArrayBuffer(common.PingStruct.size));
+                common.PingStruct.kind.write(view, common.MessageKind.Ping);
+                common.PingStruct.timestamp.write(view, performance.now());
                 ws.send(view);
                 pingCooldown = PING_COOLDOWN;
             }
