@@ -79,7 +79,7 @@ const DIRECTION_KEYS: {[key: string]: common.Direction} = {
             } else if (common.PlayersLeftHeaderStruct.verify(view)) {
                 const count = common.PlayersLeftHeaderStruct.count.read(view);
                 for (let i = 0; i < count; ++i) {
-                    const id = view.getUint32(common.PlayersLeftHeaderStruct.size + i*common.UINT32_SIZE, true);
+                    const id = common.PlayersLeftHeaderStruct.items(i).id.read(view);
                     players.delete(id);
                 }
             } else if (common.PlayersMovingHeaderStruct.verify(view)) {

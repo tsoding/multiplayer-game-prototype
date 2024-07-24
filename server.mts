@@ -294,24 +294,19 @@ function tick() {
     }
 
     // Notifying about whom left
-    {
+    if (leftIds.size > 0) {
         const count = leftIds.size;
-        if (count > 0) {
-            const buffer = new ArrayBuffer(common.PlayersLeftHeaderStruct.size + count*common.UINT32_SIZE);
-            const view = new DataView(buffer);
-            common.PlayersLeftHeaderStruct.kind.write(view, common.MessageKind.PlayerLeft);
-            common.PlayersLeftHeaderStruct.count.write(view, count);
-            let index = 0;
-            leftIds.forEach((leftId) => {
-                view.setUint32(common.PlayersLeftHeaderStruct.size + index*common.UINT32_SIZE, leftId, true);
-                index += 1;
-            })
-            players.forEach((player) => {
-                player.ws.send(view);
-                bytesSentCounter += view.byteLength;
-                messageSentCounter += 1
-            })
-        }
+        const view = common.PlayersLeftHeaderStruct.allocateAndInit(count);
+        let index = 0;
+        leftIds.forEach((leftId) => {
+            common.PlayersLeftHeaderStruct.items(index).id.write(view, leftId)
+            index += 1;
+        })
+        players.forEach((player) => {
+            player.ws.send(view);
+            bytesSentCounter += view.byteLength;
+            messageSentCounter += 1
+        })
     }
 
     // Notify about moving player
