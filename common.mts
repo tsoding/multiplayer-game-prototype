@@ -165,31 +165,32 @@ export const PlayerStruct = (() => {
 export const PlayersJoinedHeaderStruct = (() => {
     const allocator = { size: 0 };
     const kind   = allocUint8Field(allocator);
-    const count  = allocUint16Field(allocator);
     const size   = allocator.size;
+    const itemSize = PlayerStruct.size;
     const verify = (view: DataView) =>
         view.byteLength >= size &&
-        (view.byteLength - size)%PlayerStruct.size === 0 &&
+        (view.byteLength - size)%itemSize === 0 &&
         kind.read(view) == MessageKind.PlayerJoined;
+    const count = (view: DataView) => (view.byteLength - size)/itemSize
     return {kind, count, size, verify};
 })();
 
 export const PlayersMovingHeaderStruct = (() => {
     const allocator = { size: 0 };
     const kind   = allocUint8Field(allocator);
-    const count  = allocUint16Field(allocator);
     const size   = allocator.size;
+    const itemSize = PlayerStruct.size;
     const verify = (view: DataView) =>
         view.byteLength >= size &&
-        (view.byteLength - size)%PlayerStruct.size === 0 &&
+        (view.byteLength - size)%itemSize === 0 &&
         kind.read(view) == MessageKind.PlayerMoving;
+    const count = (view: DataView) => (view.byteLength - size)/itemSize;
     return {kind, count, size, verify};
 })();
 
 export const PlayersLeftHeaderStruct = (() => {
     const allocator = { size: 0 };
     const kind = allocUint8Field(allocator);
-    const count = allocUint16Field(allocator);
     const headerSize = allocator.size;
     const itemSize = UINT32_SIZE;
     const items = (index: number) => {
@@ -208,9 +209,9 @@ export const PlayersLeftHeaderStruct = (() => {
         const buffer = new ArrayBuffer(headerSize + itemSize*countItems);
         const view = new DataView(buffer);
         kind.write(view, MessageKind.PlayerLeft);
-        count.write(view, countItems);
         return view;
     }
+    const count = (view: DataView) => (view.byteLength - headerSize)/itemSize
     return {kind, count, items, itemSize, headerSize, verify, allocateAndInit};
 })();
 

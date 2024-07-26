@@ -56,7 +56,7 @@ const DIRECTION_KEYS: {[key: string]: common.Direction} = {
             }
         } else {
             if (common.PlayersJoinedHeaderStruct.verify(view)) {
-                const count = common.PlayersJoinedHeaderStruct.count.read(view);
+                const count = common.PlayersJoinedHeaderStruct.count(view);
                 for (let i = 0; i < count; ++i) {
                     const playerView = new DataView(event.data, common.PlayersJoinedHeaderStruct.size + i*common.PlayerStruct.size, common.PlayerStruct.size);
                     const id = common.PlayerStruct.id.read(playerView);
@@ -77,13 +77,13 @@ const DIRECTION_KEYS: {[key: string]: common.Direction} = {
                     }
                 }
             } else if (common.PlayersLeftHeaderStruct.verify(view)) {
-                const count = common.PlayersLeftHeaderStruct.count.read(view);
+                const count = common.PlayersLeftHeaderStruct.count(view);
                 for (let i = 0; i < count; ++i) {
                     const id = common.PlayersLeftHeaderStruct.items(i).id.read(view);
                     players.delete(id);
                 }
             } else if (common.PlayersMovingHeaderStruct.verify(view)) {
-                const count = common.PlayersMovingHeaderStruct.count.read(view);
+                const count = common.PlayersMovingHeaderStruct.count(view);
                 for (let i = 0; i < count; ++i) {
                     const playerView = new DataView(event.data, common.PlayersMovingHeaderStruct.size + i*common.PlayerStruct.size, common.PlayerStruct.size);
 

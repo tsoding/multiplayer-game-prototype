@@ -121,7 +121,7 @@ namespace Stats {
 }
 
 const SERVER_FPS = 60;
-const SERVER_LIMIT = 1000;
+const SERVER_LIMIT = 2000;
 
 interface PlayerOnServer extends Player {
     ws: WebSocket,
@@ -224,7 +224,6 @@ function tick() {
             const buffer = new ArrayBuffer(common.PlayersJoinedHeaderStruct.size + count*common.PlayerStruct.size);
             const headerView = new DataView(buffer, 0, common.PlayersJoinedHeaderStruct.size);
             common.PlayersJoinedHeaderStruct.kind.write(headerView, common.MessageKind.PlayerJoined);
-            common.PlayersJoinedHeaderStruct.count.write(headerView, count);
 
             // Reconstructing the state of the other players
             let index = 0;
@@ -267,7 +266,6 @@ function tick() {
             const buffer = new ArrayBuffer(common.PlayersJoinedHeaderStruct.size + count*common.PlayerStruct.size);
             const headerView = new DataView(buffer, 0, common.PlayersJoinedHeaderStruct.size);
             common.PlayersJoinedHeaderStruct.kind.write(headerView, common.MessageKind.PlayerJoined);
-            common.PlayersJoinedHeaderStruct.count.write(headerView, count);
 
             let index = 0;
             joinedIds.forEach((joinedId) => {
@@ -321,7 +319,6 @@ function tick() {
             const buffer = new ArrayBuffer(common.PlayersMovingHeaderStruct.size + count*common.PlayerStruct.size);
             const headerView = new DataView(buffer, 0, common.PlayersMovingHeaderStruct.size);
             common.PlayersMovingHeaderStruct.kind.write(headerView, common.MessageKind.PlayerMoving);
-            common.PlayersMovingHeaderStruct.count.write(headerView, count);
 
             let index = 0;
             players.forEach((player) => {

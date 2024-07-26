@@ -46,7 +46,7 @@ function createBot(): Bot {
             }
         } else {
             if (common.PlayersMovingHeaderStruct.verify(view)) {
-                const count = common.PlayersMovingHeaderStruct.count.read(view);
+                const count = common.PlayersMovingHeaderStruct.count(view);
 
                 for (let i = 0; i < count; ++i) {
                     const playerView = new DataView(event.data, common.PlayersMovingHeaderStruct.size + i*common.PlayerStruct.size, common.PlayerStruct.size);
