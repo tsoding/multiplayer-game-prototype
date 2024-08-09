@@ -121,14 +121,17 @@ namespace Stats {
 }
 
 const SERVER_FPS = 60;
-const SERVER_LIMIT = 2000;
+const SERVER_TOTAL_LIMIT = 2000;
+const SERVER_SINGLE_IP_LIMIT = 10;
 
 interface PlayerOnServer extends Player {
     ws: WebSocket,
+    remoteAddress: string,
     newMoving: number,
 }
 
 const players = new Map<number, PlayerOnServer>();
+const connectionLimits = new Map<string, number>();
 let idCounter = 0;
 let bytesReceivedWithinTick = 0;
 let messagesRecievedWithinTick = 0;
@@ -139,19 +142,41 @@ const joinedIds = new Set<number>()
 const leftIds = new Set<number>()
 const pingIds = new Map<number, number>()
 
-wss.on("connection", (ws) => {
+wss.on("connection", (ws, req) => {
     ws.binaryType = 'arraybuffer';
-    if (players.size >= SERVER_LIMIT) {
+
+    if (players.size >= SERVER_TOTAL_LIMIT) {
         Stats.playersRejected.counter += 1
         ws.close();
         return;
     }
+
+    if (req.socket.remoteAddress === undefined) {
+        // NOTE: something weird happened the client does not have a remote address
+        Stats.playersRejected.counter += 1;
+        ws.close();
+        return;
+    }
+
+    const remoteAddress = req.socket.remoteAddress;
+
+    {
+        let count = connectionLimits.get(remoteAddress) || 0;
+        if (count >= SERVER_SINGLE_IP_LIMIT) {
+            Stats.playersRejected.counter += 1;
+            ws.close();
+            return;
+        }
+        connectionLimits.set(remoteAddress, count + 1);
+    }
+
     const id = idCounter++;
     const x = Math.random()*(common.WORLD_WIDTH - common.PLAYER_SIZE);
     const y = Math.random()*(common.WORLD_HEIGHT - common.PLAYER_SIZE);
     const hue = Math.floor(Math.random()*360);
     const player = {
         ws,
+        remoteAddress,
         id,
         x,
         y,
@@ -199,6 +224,14 @@ wss.on("connection", (ws) => {
     });
     ws.on("close", () => {
         // console.log(`Player ${id} disconnected`);
+        let count = connectionLimits.get(remoteAddress);
+        if (count !== undefined) {
+            if (count <= 1) {
+                connectionLimits.delete(remoteAddress);
+            } else {
+                connectionLimits.set(remoteAddress, count - 1);
+            }
+        }
         players.delete(id);
         Stats.playersLeft.counter += 1;
         Stats.playersCurrently.counter -= 1;
