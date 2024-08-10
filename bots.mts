@@ -105,5 +105,11 @@ function createBot(): Bot {
     return bot
 }
 
+let numBots = 200;
+
+if (process.argv.length > 2) {
+  numBots = parseInt(process.argv[2]);
+}
+
 let bots: Array<Bot> = []
-for (let i = 0; i < 200; ++i) bots.push(createBot())
+for (let i = 0; i < numBots; ++i) bots.push(createBot())
